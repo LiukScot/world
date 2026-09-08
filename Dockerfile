@@ -1,4 +1,4 @@
-FROM oven/bun:1.4.0 AS frontend-deps
+FROM oven/bun:1.4.2 AS frontend-deps
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/bun.lock* ./
 RUN bun install --frozen-lockfile
@@ -8,7 +8,7 @@ COPY frontend/ ./
 ENV NODE_OPTIONS="--max-old-space-size=384"
 RUN bun run build
 
-FROM oven/bun:1.4.0
+FROM oven/bun:1.4.2
 WORKDIR /app
 
 COPY backend/package.json backend/bun.lock* ./backend/
