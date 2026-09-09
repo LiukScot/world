@@ -18,7 +18,8 @@ function clientIp(c: Context): string | null {
 }
 
 /**
- * Caps credential guessing per client IP. In-memory, so the counter resets
+ * Caps credential guessing per client IP: only rejected attempts count, so
+ * signing in normally never trips it. In-memory, so the counter resets
  * with the process and is per instance; that matches the single-container
  * deployment this app has.
  */
@@ -26,6 +27,7 @@ export const authRateLimit = rateLimiter({
   windowMs: WINDOW_MS,
   limit: ATTEMPTS_PER_WINDOW,
   standardHeaders: "draft-6",
+  skipSuccessfulRequests: true,
   keyGenerator: (c) => clientIp(c) ?? "",
   skip: (c) => clientIp(c) === null,
   handler: (c) =>
