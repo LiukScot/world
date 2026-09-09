@@ -4,7 +4,6 @@ import { z } from "zod";
 import type { DrizzleDB } from "../db/index.ts";
 import { painEntries, painOptions } from "../db/index.ts";
 import { toNullableInt } from "../db.ts";
-import type { SQLiteDB } from "../db.ts";
 import {
   parseJson,
   parseIdParam,
@@ -18,8 +17,7 @@ import {
 } from "../helpers.ts";
 import { painSchema, optionFieldSchema, optionPreselectSchema } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
+import type { AppEnv as Env } from "../app-env.ts";
 
 function extractPainField(body: z.infer<typeof painSchema>, field: PainMultiField): string {
   const direct = body[field];

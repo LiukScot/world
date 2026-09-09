@@ -1,14 +1,11 @@
 import { Hono } from "hono";
 import { and, desc, eq, sql } from "drizzle-orm";
-import type { DrizzleDB } from "../db/index.ts";
 import { monthlyMovements } from "../db/index.ts";
-import type { SQLiteDB } from "../db.ts";
 import { parseJson } from "../helpers.ts";
 import { movementSchema } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
 import { makeId, normalizeMovement, readPageBounds } from "../money-helpers.ts";
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
+import type { AppEnv as Env } from "../app-env.ts";
 
 const moneyMovements = new Hono<Env>();
 

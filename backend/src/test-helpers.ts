@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { sql } from "drizzle-orm";
 import { createDrizzle, users, sessions, type DrizzleDB } from "./db/index.ts";
 import { runMigrations, type SQLiteDB } from "./db.ts";
+import type { AppEnv } from "./app-env.ts";
 
 export type TestContext = {
   db: DrizzleDB;
@@ -67,15 +68,7 @@ export async function seedSession(
   return sid;
 }
 
-export type TestEnv = {
-  Variables: {
-    db: DrizzleDB;
-    rawDb: SQLiteDB;
-    userId: number;
-    userEmail: string;
-    sessionSid: string;
-  };
-};
+export type TestEnv = AppEnv;
 
 export function createTestApp<E extends TestEnv = TestEnv>(
   ctx: TestContext,

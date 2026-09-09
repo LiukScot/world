@@ -1,5 +1,6 @@
 import path from "node:path";
 import { openDb, runMigrations } from "./db.ts";
+import { changePasswordSchema, registerSchema } from "./schemas.ts";
 
 const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), "../data/world.sqlite");
 const cmd = process.argv[2];
@@ -26,18 +27,22 @@ async function main() {
   if (cmd === "list") {
     const rows = db
       .query(`SELECT id, email, name, disabled_at, created_at, updated_at FROM users ORDER BY id ASC`)
-      .all() as any[];
+      .all() as Array<{ id: number; email: string; name: string | null; disabled_at: string | null; created_at: string; updated_at: string }>;
     console.table(rows);
     db.close();
     return;
   }
 
   if (cmd === "create") {
-    const email = required("email").trim().toLowerCase();
-    const password = required("password");
-    const name = arg("name") ?? null;
+    // Same rules as the register endpoint: a password over 72 bytes could
+    // never be signed in with, since login caps it there.
+    const { email, password, name } = registerSchema.parse({
+      email: required("email"),
+      password: required("password"),
+      name: arg("name") ?? "",
+    });
     const hash = await Bun.password.hash(password, { algorithm: "argon2id" });
-    db.query(`INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)`).run(email, hash, name);
+    db.query(`INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)`).run(email, hash, name || null);
     console.log(`User created: ${email}`);
     db.close();
     return;
@@ -45,7 +50,7 @@ async function main() {
 
   if (cmd === "reset-password") {
     const email = required("email").trim().toLowerCase();
-    const password = required("password");
+    const password = changePasswordSchema.shape.newPassword.parse(required("password"));
     const hash = await Bun.password.hash(password, { algorithm: "argon2id" });
     const result = db.query(`UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE email = ?`).run(hash, email);
     if (!result.changes) {

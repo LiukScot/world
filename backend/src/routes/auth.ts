@@ -1,11 +1,10 @@
 import { Hono } from "hono";
 import { eq, sql } from "drizzle-orm";
-import type { DrizzleDB } from "../db/index.ts";
 import { users } from "../db/index.ts";
-import type { SQLiteDB } from "../db.ts";
 import { parseJson, buildSessionCookie, clearSessionCookie } from "../helpers.ts";
 import { loginSchema, registerSchema, changePasswordSchema } from "../schemas.ts";
-import { getSession, createSession, deleteSession, requireAuth } from "../middleware/auth.ts";
+import { getSession, createSession, deleteSession, deleteUserSessions, requireAuth } from "../middleware/auth.ts";
+import type { AppEnv as Env } from "../app-env.ts";
 
 async function verifyPassword(password: string, storedHash: string): Promise<{ ok: boolean; rehash?: string }> {
   if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") || storedHash.startsWith("$2y$")) {
@@ -21,8 +20,6 @@ async function verifyPassword(password: string, storedHash: string): Promise<{ o
 function isUniqueEmailViolation(error: unknown): boolean {
   return error instanceof Error && /UNIQUE constraint failed:\s*users\.email/i.test(error.message);
 }
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
 
 const auth = new Hono<Env>();
 
@@ -148,7 +145,6 @@ auth.post("/change-password", requireAuth, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const userEmail = c.get("userEmail");
-  const sessionSid = c.get("sessionSid");
   const body = await parseJson(c, changePasswordSchema);
 
   const row = db
@@ -170,7 +166,9 @@ auth.post("/change-password", requireAuth, async (c) => {
     .where(eq(users.id, userId))
     .run();
 
-  deleteSession(db, sessionSid);
+  // A changed password means the old one may have leaked: every session it
+  // opened goes, and only the caller gets a fresh one.
+  deleteUserSessions(db, userId);
   const sid = createSession(db, userId, userEmail);
   c.header("set-cookie", buildSessionCookie(sid));
   return c.json({ data: { ok: true } });

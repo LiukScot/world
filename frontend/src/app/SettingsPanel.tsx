@@ -173,7 +173,7 @@ function DangerBlock({
           <InlineFeedback
             message={{
               tone: "warning",
-              text: "This permanently deletes all diary, pain, and preference data for this account.",
+              text: "This permanently deletes all diary, pain, CBT, DBT, memorable days, option lists and preference data for this account.",
             }}
           />
           <div className="flex gap-3 items-center flex-wrap [grid-column:1/-1]">

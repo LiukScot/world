@@ -417,4 +417,30 @@ describe("POST /auth/change-password", () => {
     });
     expect(loginAgain.status).toBe(200);
   });
+
+  test("revokes the user's other sessions, keeps the fresh one", async () => {
+    const otherLogin = await app.request("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "user@example.com", password: "Password123!" }),
+    });
+    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+
+    const res = await app.request("/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify({ currentPassword: "Password123!", newPassword: "NewPassword456!" }),
+    });
+    expect(res.status).toBe(200);
+    const freshCookie = extractSessionCookie(res.headers.get("set-cookie"));
+
+    for (const [name, value, authenticated] of [
+      ["other", otherCookie, false],
+      ["old", cookie, false],
+      ["fresh", freshCookie, true],
+    ] as const) {
+      const session = await app.request("/auth/session", { headers: { cookie: value } });
+      expect((await session.json()).data.authenticated, name).toBe(authenticated);
+    }
+  });
 });

@@ -1,13 +1,10 @@
 import { Hono } from "hono";
 import { eq, sql } from "drizzle-orm";
-import type { DrizzleDB } from "../db/index.ts";
 import { userPreferences } from "../db/index.ts";
-import type { SQLiteDB } from "../db.ts";
 import { parseJson } from "../helpers.ts";
 import { prefsSchema, DEFAULT_MODEL } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
+import type { AppEnv as Env } from "../app-env.ts";
 
 const preferences = new Hono<Env>();
 

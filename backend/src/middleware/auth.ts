@@ -5,6 +5,7 @@ import { readCookie } from "../helpers.ts";
 import type { DrizzleDB } from "../db/index.ts";
 import { sessions, users } from "../db/index.ts";
 import type { SQLiteDB } from "../db.ts";
+import type { AppEnv } from "../app-env.ts";
 
 export type SessionData = {
   sid: string;
@@ -46,6 +47,11 @@ export function deleteSession(db: DrizzleDB, sid: string): void {
   db.delete(sessions).where(eq(sessions.sid, sid)).run();
 }
 
+/** Signs the user out everywhere — the step a password change exists for. */
+export function deleteUserSessions(db: DrizzleDB, userId: number): void {
+  db.delete(sessions).where(eq(sessions.userId, userId)).run();
+}
+
 /** Remove expired sessions — call on startup */
 export function cleanupExpiredSessions(rawDb: SQLiteDB): void {
   rawDb.query(`DELETE FROM sessions WHERE expires_at < datetime('now')`).run();
@@ -55,9 +61,7 @@ export function cleanupExpiredSessions(rawDb: SQLiteDB): void {
  * Middleware that requires authentication.
  * Sets userId and userEmail on the context for use in route handlers.
  */
-export const requireAuth = createMiddleware<{
-  Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string };
-}>(async (c, next) => {
+export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   const db = c.get("db");
   const session = getSession(db, c.req.raw);
   if (!session) {

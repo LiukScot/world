@@ -3,6 +3,7 @@ import authRoute from "./auth.ts";
 import backupRoute from "./backup.ts";
 import diaryRoute from "./diary.ts";
 import painRoute from "./pain.ts";
+import moodRoute from "./mood.ts";
 import { extractSessionCookie, seedUser, setupAuthedApp } from "../test-helpers.ts";
 import type { SQLiteDB } from "../db.ts";
 
@@ -13,6 +14,7 @@ async function setup() {
     { path: "/data", route: backupRoute },
     { path: "/diary", route: diaryRoute },
     { path: "/pain", route: painRoute },
+    { path: "/mood", route: moodRoute },
   ]);
   return { ctx: s.ctx, app: s.app, cookie: s.cookie, userId: s.user.id };
 }
@@ -361,5 +363,42 @@ describe("POST /backup/purge", () => {
     expect(purge.status).toBe(200);
 
     expect(countUserRows(ctx.rawDb, userId)).toBe(seeded);
+  });
+});
+
+describe("backup mood options round-trip", () => {
+  test("import restores the mood options list the export carries", async () => {
+    const { app, cookie } = await setup();
+    const importRes = await app.request("/backup/json/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify({
+        diary: { rows: [], moodOptions: { positive_moods: ["joyful", " joyful "], negative_moods: [], general_moods: ["sleepy"] } },
+      }),
+    });
+    expect(importRes.status).toBe(200);
+
+    const exportRes = await app.request("/backup/json", { headers: { cookie } });
+    const body = await exportRes.json();
+    expect(body.data.diary.moodOptions).toEqual({ positive_moods: ["joyful"], negative_moods: [], general_moods: ["sleepy"] });
+  });
+
+  test("a backup without moodOptions leaves the current list alone", async () => {
+    const { app, cookie } = await setup();
+    await app.request("/mood/options/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify({ field: "general_moods", value: "sleepy" }),
+    });
+    const importRes = await app.request("/backup/json/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify({ diary: { rows: [] } }),
+    });
+    expect(importRes.status).toBe(200);
+
+    const exportRes = await app.request("/backup/json", { headers: { cookie } });
+    const body = await exportRes.json();
+    expect(body.data.diary.moodOptions.general_moods).toEqual(["sleepy"]);
   });
 });

@@ -57,12 +57,7 @@ export function useSettings() {
         apiEnvelopeSchema(z.object({ ok: z.boolean() })).parse(raw).data,
       ),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["diary"] }),
-        queryClient.invalidateQueries({ queryKey: ["pain"] }),
-        queryClient.invalidateQueries({ queryKey: ["prefs"] }),
-        queryClient.invalidateQueries({ queryKey: ["memorable-days"] }),
-      ]);
+      await queryClient.invalidateQueries();
       setPurgeConfirmArmed(false);
     },
   });
