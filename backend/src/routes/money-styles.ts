@@ -1,13 +1,10 @@
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
-import type { DrizzleDB } from "../db/index.ts";
 import { assetStyles } from "../db/index.ts";
-import type { SQLiteDB } from "../db.ts";
 import { parseJson } from "../helpers.ts";
 import { stylesSchema } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
+import type { AppEnv as Env } from "../app-env.ts";
 
 const moneyStyles = new Hono<Env>();
 

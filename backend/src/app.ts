@@ -5,7 +5,8 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { env, allowedOrigins } from "./env.ts";
 import { openDb, runMigrations } from "./db.ts";
-import { createDrizzle, type DrizzleDB } from "./db/index.ts";
+import { createDrizzle } from "./db/index.ts";
+import type { AppEnv } from "./app-env.ts";
 import { cleanupExpiredSessions } from "./middleware/auth.ts";
 
 import auth from "./routes/auth.ts";
@@ -33,16 +34,6 @@ const db = createDrizzle(rawDb);
 // Clean up expired sessions on startup
 cleanupExpiredSessions(rawDb);
 
-// App type with shared variables
-type AppEnv = {
-  Variables: {
-    db: DrizzleDB;
-    rawDb: typeof rawDb;
-    userId: number;
-    userEmail: string;
-    sessionSid: string;
-  };
-};
 
 const app = new Hono<AppEnv>();
 
@@ -162,7 +153,7 @@ function resolveStaticFile(requestPath: string): string | null {
   const normalized = requestPath === "/" ? "/index.html" : requestPath;
   const unsafePath = path.resolve(publicDir, `.${normalized}`);
   const safeRoot = path.resolve(publicDir);
-  if (!unsafePath.startsWith(safeRoot)) return null;
+  if (unsafePath !== safeRoot && !unsafePath.startsWith(safeRoot + path.sep)) return null;
   if (fs.existsSync(unsafePath) && fs.statSync(unsafePath).isFile()) {
     return unsafePath;
   }

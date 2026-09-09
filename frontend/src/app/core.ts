@@ -83,7 +83,7 @@ export const prefsSchema = apiEnvelopeSchema(
     model: z.string(),
     chatRange: z.string(),
     lastRange: z.string(),
-    graphSelection: z.record(z.string(), z.boolean()),
+    graphSelection: z.record(z.string(), z.unknown()),
   }),
 );
 
@@ -532,25 +532,27 @@ export function getDeltaStyle(className: string, absPct: number): React.CSSPrope
   };
 }
 
+/**
+ * The window of the same length that ends the day before `from`. Both
+ * bounds are inclusive calendar days; an empty `to` means today. Computed
+ * on UTC midnights so neither the timezone nor a DST switch can move a day.
+ */
 export function previousRange(from: string, to: string): { from: string; to: string } | null {
   if (!from) {
     return null;
   }
-  const fromDate = new Date(`${from}T00:00:00`);
-  const toDate = to ? new Date(`${to}T23:59:59`) : new Date();
-  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+  const fromMs = Date.parse(`${from}T00:00:00Z`);
+  const toMs = Date.parse(`${to || toDateKey(new Date())}T00:00:00Z`);
+  if (Number.isNaN(fromMs) || Number.isNaN(toMs)) {
     return null;
   }
-  const duration = toDate.getTime() - fromDate.getTime();
-  if (duration <= 0) {
+  const days = Math.round((toMs - fromMs) / MS_PER_DAY) + 1;
+  if (days <= 0) {
     return null;
   }
-  const prevTo = new Date(fromDate.getTime() - MS_PER_DAY);
-  const prevFrom = new Date(prevTo.getTime() - duration);
-  return {
-    from: prevFrom.toISOString().slice(0, 10),
-    to: prevTo.toISOString().slice(0, 10),
-  };
+  const prevToMs = fromMs - MS_PER_DAY;
+  const prevFromMs = prevToMs - (days - 1) * MS_PER_DAY;
+  return { from: new Date(prevFromMs).toISOString().slice(0, 10), to: new Date(prevToMs).toISOString().slice(0, 10) };
 }
 
 export function buildDailyAverages<T>(
@@ -643,8 +645,5 @@ export function getQuickRangeBounds(range: DashboardQuickRange): { from: string;
   const days = Number(range);
   const now = new Date();
   const from = new Date(now.getTime() - days * MS_PER_DAY);
-  return {
-    from: from.toISOString().slice(0, 10),
-    to: now.toISOString().slice(0, 10),
-  };
+  return { from: toDateKey(from), to: toDateKey(now) };
 }

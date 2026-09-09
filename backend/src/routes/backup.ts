@@ -3,10 +3,12 @@ import { eq, desc } from "drizzle-orm";
 import ExcelJS from "exceljs";
 import type { DrizzleDB } from "../db/index.ts";
 import { diaryEntries, painEntries, userPreferences, painRemovedOptions } from "../db/index.ts";
-import type { SQLiteDB } from "../db.ts";
 import { toNullableInt, toNullableNumber } from "../db.ts";
 import {
   parseJson,
+  ImportRowError,
+  importedDateTime,
+  MOOD_MULTI_FIELDS,
   PAIN_MULTI_FIELDS,
   type PainMultiField,
   rowsToHealthBackup,
@@ -18,28 +20,17 @@ import { requireAuth } from "../middleware/auth.ts";
 import { sheetToObjects } from "../xlsx-helpers.ts";
 import { loadPainOptionsForUser, loadPreselectedMedicines } from "./pain.ts";
 import { loadMoodOptionsForUser } from "./mood.ts";
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
+import type { AppEnv as Env } from "../app-env.ts";
 
 const backup = new Hono<Env>();
 
 backup.use(requireAuth);
 
-backup.get("/json", (c) => {
-  const db = c.get("db");
-  const userId = c.get("userId");
-
+function loadHealthBackup(db: DrizzleDB, userId: number) {
   const diaryRows = db.select().from(diaryEntries).where(eq(diaryEntries.userId, userId))
     .orderBy(desc(diaryEntries.entryDate), desc(diaryEntries.entryTime)).all();
   const painRows = db.select().from(painEntries).where(eq(painEntries.userId, userId))
     .orderBy(desc(painEntries.entryDate), desc(painEntries.entryTime)).all();
-
-  const prefs = db.select({
-    model: userPreferences.model,
-    chatRange: userPreferences.chatRange,
-    lastRange: userPreferences.lastRange,
-    graphSelectionJson: userPreferences.graphSelectionJson,
-  }).from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1).get();
 
   // Map Drizzle rows to the format rowsToHealthBackup expects (snake_case)
   const diaryForBackup = diaryRows.map((r) => ({
@@ -54,8 +45,21 @@ backup.get("/json", (c) => {
     symptoms: r.symptoms, area: r.area, activities: r.activities,
     habits: r.habits, other: r.other, medicines: r.medicines, note: r.note,
   }));
+  return rowsToHealthBackup(diaryForBackup, painForBackup);
+}
 
-  const result = rowsToHealthBackup(diaryForBackup, painForBackup);
+backup.get("/json", (c) => {
+  const db = c.get("db");
+  const userId = c.get("userId");
+
+  const prefs = db.select({
+    model: userPreferences.model,
+    chatRange: userPreferences.chatRange,
+    lastRange: userPreferences.lastRange,
+    graphSelectionJson: userPreferences.graphSelectionJson,
+  }).from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1).get();
+
+  const result = loadHealthBackup(db, userId);
 
   const removedRows = db.select({ field: painRemovedOptions.field, value: painRemovedOptions.value })
     .from(painRemovedOptions).where(eq(painRemovedOptions.userId, userId)).all();
@@ -108,11 +112,12 @@ backup.post("/json/import", async (c) => {
         `INSERT INTO diary_entries (user_id, entry_date, entry_time, mood_level, depression_level, anxiety_level, positive_moods, negative_moods, general_moods, description, gratitude, reflection)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       );
-      for (const row of body.diary.rows) {
+      body.diary.rows.forEach((row, index) => {
+        const { entryDate, entryTime } = importedDateTime("diary", index, row.date ?? row.entryDate, row.hour ?? row.entryTime ?? "00:00");
         insertDiary.run(
           userId,
-          String(row.date ?? row.entryDate ?? ""),
-          String(row.hour ?? row.entryTime ?? "00:00"),
+          entryDate,
+          entryTime,
           toNullableNumber(row["mood level"] ?? row.moodLevel),
           toNullableNumber(row.depression ?? row.depressionLevel),
           toNullableNumber(row.anxiety ?? row.anxietyLevel),
@@ -123,7 +128,7 @@ backup.post("/json/import", async (c) => {
           String(row.gratitude ?? ""),
           String(row.reflection ?? "")
         );
-      }
+      });
     }
 
     if (body.pain?.rows) {
@@ -131,11 +136,12 @@ backup.post("/json/import", async (c) => {
         `INSERT INTO pain_entries (user_id, entry_date, entry_time, pain_level, fatigue_level, coffee_count, area, symptoms, activities, medicines, habits, other, note)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       );
-      for (const row of body.pain.rows) {
+      body.pain.rows.forEach((row, index) => {
+        const { entryDate, entryTime } = importedDateTime("pain", index, row.date ?? row.entryDate, row.hour ?? row.entryTime ?? "00:00");
         insertPain.run(
           userId,
-          String(row.date ?? row.entryDate ?? ""),
-          String(row.hour ?? row.entryTime ?? "00:00"),
+          entryDate,
+          entryTime,
           toNullableInt(row["pain level"] ?? row.painLevel),
           toNullableInt(row["fatigue level"] ?? row.fatigueLevel),
           toNullableInt(row.coffee ?? row.coffeeCount),
@@ -147,7 +153,7 @@ backup.post("/json/import", async (c) => {
           rowPainField(row, "other"),
           String(row.note ?? "")
         );
-      }
+      });
     }
 
     rawDb.query(`DELETE FROM pain_removed_options WHERE user_id = ?`).run(userId);
@@ -197,6 +203,25 @@ backup.post("/json/import", async (c) => {
       }
     }
 
+    // The export carries diary.moodOptions; the same presence guard as the
+    // pain options above keeps legacy backups from emptying the list.
+    const importedMoodOptions = body.diary?.moodOptions;
+    if (importedMoodOptions) {
+      rawDb.query(`DELETE FROM mood_options WHERE user_id = ?`).run(userId);
+      const insertMoodOption = rawDb.query(
+        `INSERT INTO mood_options (user_id, field, value)
+         VALUES (?, ?, ?)
+         ON CONFLICT(user_id, field, value) DO NOTHING`
+      );
+      for (const field of MOOD_MULTI_FIELDS) {
+        for (const raw of importedMoodOptions[field] ?? []) {
+          const normalized = raw.trim();
+          if (!normalized) continue;
+          insertMoodOption.run(userId, field, normalized);
+        }
+      }
+    }
+
     if (parsedPrefs) {
       const pref = parsedPrefs;
       rawDb.query(
@@ -215,6 +240,9 @@ backup.post("/json/import", async (c) => {
   try {
     tx();
   } catch (e) {
+    if (e instanceof ImportRowError) {
+      return c.json({ error: { code: "IMPORT_FAILED", message: `Import failed: ${e.message}` } }, 422);
+    }
     console.error("JSON import transaction failed:", e);
     return c.json({ error: { code: "IMPORT_FAILED", message: "Import failed: invalid or incompatible backup data" } }, 422);
   }
@@ -222,28 +250,7 @@ backup.post("/json/import", async (c) => {
 });
 
 backup.get("/xlsx", async (c) => {
-  const db = c.get("db");
-  const userId = c.get("userId");
-
-  const diaryRows = db.select().from(diaryEntries).where(eq(diaryEntries.userId, userId))
-    .orderBy(desc(diaryEntries.entryDate), desc(diaryEntries.entryTime)).all();
-  const painRows = db.select().from(painEntries).where(eq(painEntries.userId, userId))
-    .orderBy(desc(painEntries.entryDate), desc(painEntries.entryTime)).all();
-
-  const diaryForBackup = diaryRows.map((r) => ({
-    entry_date: r.entryDate, entry_time: r.entryTime,
-    mood_level: r.moodLevel, depression_level: r.depressionLevel, anxiety_level: r.anxietyLevel,
-    positive_moods: r.positiveMoods, negative_moods: r.negativeMoods, general_moods: r.generalMoods,
-    description: r.description, gratitude: r.gratitude, reflection: r.reflection,
-  }));
-  const painForBackup = painRows.map((r) => ({
-    entry_date: r.entryDate, entry_time: r.entryTime,
-    pain_level: r.painLevel, fatigue_level: r.fatigueLevel, coffee_count: r.coffeeCount,
-    symptoms: r.symptoms, area: r.area, activities: r.activities,
-    habits: r.habits, other: r.other, medicines: r.medicines, note: r.note,
-  }));
-
-  const result = rowsToHealthBackup(diaryForBackup, painForBackup);
+  const result = loadHealthBackup(c.get("db"), c.get("userId"));
   const workbook = new ExcelJS.Workbook();
 
   const diarySheet = workbook.addWorksheet("diary");
@@ -347,11 +354,12 @@ backup.post("/xlsx/import", async (c) => {
       `INSERT INTO diary_entries (user_id, entry_date, entry_time, mood_level, depression_level, anxiety_level, description, gratitude, reflection, positive_moods, negative_moods, general_moods)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
-    for (const row of diaryRows) {
+    diaryRows.forEach((row, index) => {
+      const { entryDate, entryTime } = importedDateTime("diary", index, row.date, row.hour ?? "00:00");
       insertDiary.run(
         userId,
-        String(row.date ?? ""),
-        String(row.hour ?? "00:00"),
+        entryDate,
+        entryTime,
         toNullableNumber(row["mood level"]),
         toNullableNumber(row.depression),
         toNullableNumber(row.anxiety),
@@ -362,17 +370,18 @@ backup.post("/xlsx/import", async (c) => {
         String(row["negative moods"] ?? row.negative_moods ?? ""),
         String(row["general moods"] ?? row.general_moods ?? "")
       );
-    }
+    });
 
     const insertPain = rawDb.query(
       `INSERT INTO pain_entries (user_id, entry_date, entry_time, pain_level, fatigue_level, coffee_count, area, symptoms, activities, medicines, habits, other, note)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
-    for (const row of painRows) {
+    painRows.forEach((row, index) => {
+      const { entryDate, entryTime } = importedDateTime("pain", index, row.date, row.hour ?? "00:00");
       insertPain.run(
         userId,
-        String(row.date ?? ""),
-        String(row.hour ?? "00:00"),
+        entryDate,
+        entryTime,
         toNullableInt(row["pain level"]),
         toNullableInt(row["fatigue level"]),
         toNullableInt(row.coffee),
@@ -384,12 +393,15 @@ backup.post("/xlsx/import", async (c) => {
         rowPainField(row, "other"),
         String(row.note ?? "")
       );
-    }
+    });
   });
 
   try {
     tx();
   } catch (e) {
+    if (e instanceof ImportRowError) {
+      return c.json({ error: { code: "IMPORT_FAILED", message: `Import failed: ${e.message}` } }, 422);
+    }
     console.error("XLSX import transaction failed:", e);
     return c.json({ error: { code: "IMPORT_FAILED", message: "Import failed: invalid or incompatible XLSX data" } }, 422);
   }

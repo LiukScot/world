@@ -2,12 +2,10 @@ import { Hono } from "hono";
 import { eq, and } from "drizzle-orm";
 import type { DrizzleDB } from "../db/index.ts";
 import { moodOptions } from "../db/index.ts";
-import type { SQLiteDB } from "../db.ts";
 import { parseJson, MOOD_MULTI_FIELDS, type MoodMultiField, type MoodTagMap } from "../helpers.ts";
 import { optionFieldSchema } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
+import type { AppEnv as Env } from "../app-env.ts";
 
 function emptyMoodOptions(): MoodTagMap {
   return { positive_moods: [], negative_moods: [], general_moods: [] };

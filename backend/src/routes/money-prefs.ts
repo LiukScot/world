@@ -1,13 +1,10 @@
 import { Hono } from "hono";
 import { eq, sql } from "drizzle-orm";
-import type { DrizzleDB } from "../db/index.ts";
 import { userPreferences } from "../db/index.ts";
-import type { SQLiteDB } from "../db.ts";
 import { parseJson } from "../helpers.ts";
 import { moneyPrefsSchema } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
+import type { AppEnv as Env } from "../app-env.ts";
 
 // Money's slice of user_preferences. Both realms write the same row, each
 // touching only its own columns, so the upserts below never clobber the

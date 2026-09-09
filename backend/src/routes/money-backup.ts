@@ -1,15 +1,12 @@
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import ExcelJS from "exceljs";
-import type { DrizzleDB } from "../db/index.ts";
-import type { SQLiteDB } from "../db.ts";
 import { parseJson } from "../helpers.ts";
 import { moneyBackupImportSchema } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
 import { applyImport, buildBackupPayload, coerceBoolean, wipeMoneyData, type ImportCounts } from "../money-backup-helpers.ts";
 import { sheetToObjects } from "../xlsx-helpers.ts";
-
-type Env = { Variables: { db: DrizzleDB; rawDb: SQLiteDB; userId: number; userEmail: string; sessionSid: string } };
+import type { AppEnv as Env } from "../app-env.ts";
 
 const MAX_XLSX_BYTES = 10 * 1024 * 1024;
 // base64 inflation is exactly ceil(n * 4/3); +4 accounts for padding

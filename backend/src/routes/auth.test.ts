@@ -417,4 +417,66 @@ describe("POST /auth/change-password", () => {
     });
     expect(loginAgain.status).toBe(200);
   });
+
+  test("revokes the user's other sessions, keeps the fresh one", async () => {
+    const otherLogin = await app.request("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "user@example.com", password: "Password123!" }),
+    });
+    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+
+    const res = await app.request("/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify({ currentPassword: "Password123!", newPassword: "NewPassword456!" }),
+    });
+    expect(res.status).toBe(200);
+    const freshCookie = extractSessionCookie(res.headers.get("set-cookie"));
+
+    for (const [name, value, authenticated] of [
+      ["other", otherCookie, false],
+      ["old", cookie, false],
+      ["fresh", freshCookie, true],
+    ] as const) {
+      const session = await app.request("/auth/session", { headers: { cookie: value } });
+      expect((await session.json()).data.authenticated, name).toBe(authenticated);
+    }
+  });
+});
+
+describe("auth rate limit", () => {
+  test("blocks the 11th attempt from one address within the window, others unaffected", async () => {
+    const ctx = createTestDb();
+    const app = createTestApp(ctx, "/auth", authRoute);
+    const attempt = (ip: string) =>
+      app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": ip },
+        body: JSON.stringify({ email: "nobody@example.com", password: "WrongPassword!" }),
+      });
+    for (let i = 0; i < 10; i++) {
+      expect((await attempt("203.0.113.7")).status).toBe(401);
+    }
+    const blocked = await attempt("203.0.113.7");
+    expect(blocked.status).toBe(429);
+    expect((await blocked.json()).error.code).toBe("RATE_LIMITED");
+    expect((await attempt("203.0.113.8")).status).toBe(401);
+  });
+
+  test("successful sign-ins do not count towards the cap", async () => {
+    const ctx = createTestDb();
+    const app = createTestApp(ctx, "/auth", authRoute);
+    await seedUser(ctx.db, { email: "user@example.com", password: "Password123!" });
+    const login = (password: string) =>
+      app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": "203.0.113.9" },
+        body: JSON.stringify({ email: "user@example.com", password }),
+      });
+    for (let i = 0; i < 12; i++) {
+      expect((await login("Password123!")).status).toBe(200);
+    }
+    expect((await login("WrongPassword!")).status).toBe(401);
+  });
 });

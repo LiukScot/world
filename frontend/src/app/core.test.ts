@@ -15,9 +15,11 @@ import {
   navItemsByRealm,
   navLabels,
   normalizeQuickRange,
+  prefsSchema,
   previousRange,
   realmOf,
   realms,
+  toDateKey,
 } from "./core";
 
 describe("formatDocumentTitle", () => {
@@ -154,6 +156,10 @@ describe("normalizeQuickRange + getQuickRangeBounds", () => {
     expect(bounds.from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(bounds.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
+
+  test("getQuickRangeBounds ends on the local calendar day, so an evening entry is not cut off", () => {
+    expect(getQuickRangeBounds("7").to).toBe(toDateKey(new Date()));
+  });
 });
 
 describe("isSameMonth", () => {
@@ -177,6 +183,19 @@ describe("previousRange", () => {
 
   test("returns null when from is empty", () => {
     expect(previousRange("", "2026-05-15")).toBeNull();
+  });
+
+  test("ends the day before `from`, whatever the timezone", () => {
+    expect(previousRange("2026-05-08", "2026-05-15")).toEqual({ from: "2026-04-30", to: "2026-05-07" });
+  });
+});
+
+describe("prefsSchema", () => {
+  test("accepts the nested graphSelection the dashboard saves", () => {
+    const parsed = prefsSchema.parse({
+      data: { model: "", chatRange: "all", lastRange: "30", graphSelection: { "graph-wellbeing": { pain: false } } },
+    });
+    expect(extractWellbeingSelection(parsed.data.graphSelection).pain).toBe(false);
   });
 });
 
