@@ -9,6 +9,27 @@ export const PAIN_MULTI_FIELDS = TAG_TYPES;
 export type PainMultiField = TagType;
 
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/;
+
+/** A backup row the import refuses; the message names the row for the user. */
+export class ImportRowError extends Error {}
+
+/**
+ * Validates one imported entry's date and time. Throws ImportRowError so the
+ * surrounding transaction rolls back: a partial restore is worse than none.
+ * Seconds are accepted and dropped since the app stores HH:MM.
+ */
+export function importedDateTime(sheet: string, index: number, date: unknown, time: unknown): { entryDate: string; entryTime: string } {
+  const entryDate = String(date ?? "").trim();
+  const entryTime = String(time ?? "").trim();
+  if (!DATE_RE.test(entryDate)) {
+    throw new ImportRowError(`${sheet} row ${index + 1}: date "${entryDate}" is not YYYY-MM-DD`);
+  }
+  if (!TIME_RE.test(entryTime)) {
+    throw new ImportRowError(`${sheet} row ${index + 1}: time "${entryTime}" is not HH:MM`);
+  }
+  return { entryDate, entryTime: entryTime.slice(0, 5) };
+}
 
 export const MOOD_MULTI_FIELDS = MOOD_TAG_FIELDS;
 export type MoodMultiField = MoodTagField;

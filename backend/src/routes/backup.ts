@@ -6,6 +6,8 @@ import { diaryEntries, painEntries, userPreferences, painRemovedOptions } from "
 import { toNullableInt, toNullableNumber } from "../db.ts";
 import {
   parseJson,
+  ImportRowError,
+  importedDateTime,
   MOOD_MULTI_FIELDS,
   PAIN_MULTI_FIELDS,
   type PainMultiField,
@@ -110,11 +112,12 @@ backup.post("/json/import", async (c) => {
         `INSERT INTO diary_entries (user_id, entry_date, entry_time, mood_level, depression_level, anxiety_level, positive_moods, negative_moods, general_moods, description, gratitude, reflection)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       );
-      for (const row of body.diary.rows) {
+      body.diary.rows.forEach((row, index) => {
+        const { entryDate, entryTime } = importedDateTime("diary", index, row.date ?? row.entryDate, row.hour ?? row.entryTime ?? "00:00");
         insertDiary.run(
           userId,
-          String(row.date ?? row.entryDate ?? ""),
-          String(row.hour ?? row.entryTime ?? "00:00"),
+          entryDate,
+          entryTime,
           toNullableNumber(row["mood level"] ?? row.moodLevel),
           toNullableNumber(row.depression ?? row.depressionLevel),
           toNullableNumber(row.anxiety ?? row.anxietyLevel),
@@ -125,7 +128,7 @@ backup.post("/json/import", async (c) => {
           String(row.gratitude ?? ""),
           String(row.reflection ?? "")
         );
-      }
+      });
     }
 
     if (body.pain?.rows) {
@@ -133,11 +136,12 @@ backup.post("/json/import", async (c) => {
         `INSERT INTO pain_entries (user_id, entry_date, entry_time, pain_level, fatigue_level, coffee_count, area, symptoms, activities, medicines, habits, other, note)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       );
-      for (const row of body.pain.rows) {
+      body.pain.rows.forEach((row, index) => {
+        const { entryDate, entryTime } = importedDateTime("pain", index, row.date ?? row.entryDate, row.hour ?? row.entryTime ?? "00:00");
         insertPain.run(
           userId,
-          String(row.date ?? row.entryDate ?? ""),
-          String(row.hour ?? row.entryTime ?? "00:00"),
+          entryDate,
+          entryTime,
           toNullableInt(row["pain level"] ?? row.painLevel),
           toNullableInt(row["fatigue level"] ?? row.fatigueLevel),
           toNullableInt(row.coffee ?? row.coffeeCount),
@@ -149,7 +153,7 @@ backup.post("/json/import", async (c) => {
           rowPainField(row, "other"),
           String(row.note ?? "")
         );
-      }
+      });
     }
 
     rawDb.query(`DELETE FROM pain_removed_options WHERE user_id = ?`).run(userId);
@@ -236,6 +240,9 @@ backup.post("/json/import", async (c) => {
   try {
     tx();
   } catch (e) {
+    if (e instanceof ImportRowError) {
+      return c.json({ error: { code: "IMPORT_FAILED", message: `Import failed: ${e.message}` } }, 422);
+    }
     console.error("JSON import transaction failed:", e);
     return c.json({ error: { code: "IMPORT_FAILED", message: "Import failed: invalid or incompatible backup data" } }, 422);
   }
@@ -347,11 +354,12 @@ backup.post("/xlsx/import", async (c) => {
       `INSERT INTO diary_entries (user_id, entry_date, entry_time, mood_level, depression_level, anxiety_level, description, gratitude, reflection, positive_moods, negative_moods, general_moods)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
-    for (const row of diaryRows) {
+    diaryRows.forEach((row, index) => {
+      const { entryDate, entryTime } = importedDateTime("diary", index, row.date, row.hour ?? "00:00");
       insertDiary.run(
         userId,
-        String(row.date ?? ""),
-        String(row.hour ?? "00:00"),
+        entryDate,
+        entryTime,
         toNullableNumber(row["mood level"]),
         toNullableNumber(row.depression),
         toNullableNumber(row.anxiety),
@@ -362,17 +370,18 @@ backup.post("/xlsx/import", async (c) => {
         String(row["negative moods"] ?? row.negative_moods ?? ""),
         String(row["general moods"] ?? row.general_moods ?? "")
       );
-    }
+    });
 
     const insertPain = rawDb.query(
       `INSERT INTO pain_entries (user_id, entry_date, entry_time, pain_level, fatigue_level, coffee_count, area, symptoms, activities, medicines, habits, other, note)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
-    for (const row of painRows) {
+    painRows.forEach((row, index) => {
+      const { entryDate, entryTime } = importedDateTime("pain", index, row.date, row.hour ?? "00:00");
       insertPain.run(
         userId,
-        String(row.date ?? ""),
-        String(row.hour ?? "00:00"),
+        entryDate,
+        entryTime,
         toNullableInt(row["pain level"]),
         toNullableInt(row["fatigue level"]),
         toNullableInt(row.coffee),
@@ -384,12 +393,15 @@ backup.post("/xlsx/import", async (c) => {
         rowPainField(row, "other"),
         String(row.note ?? "")
       );
-    }
+    });
   });
 
   try {
     tx();
   } catch (e) {
+    if (e instanceof ImportRowError) {
+      return c.json({ error: { code: "IMPORT_FAILED", message: `Import failed: ${e.message}` } }, 422);
+    }
     console.error("XLSX import transaction failed:", e);
     return c.json({ error: { code: "IMPORT_FAILED", message: "Import failed: invalid or incompatible XLSX data" } }, 422);
   }

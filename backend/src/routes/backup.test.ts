@@ -402,3 +402,26 @@ describe("backup mood options round-trip", () => {
     expect(body.data.diary.moodOptions.general_moods).toEqual(["sleepy"]);
   });
 });
+
+describe("import rejects rows with a bad date", () => {
+  test("names the first bad row and keeps the existing entries", async () => {
+    const { app, cookie } = await setup();
+    await app.request("/diary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify(diaryBody),
+    });
+    const res = await app.request("/backup/json/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify({
+        diary: { rows: [{ date: "2026-05-16", hour: "08:30:00" }, { date: "16/05/2026", hour: "09:00" }] },
+      }),
+    });
+    expect(res.status).toBe(422);
+    expect((await res.json()).error.message).toContain('diary row 2: date "16/05/2026"');
+
+    const list = await app.request("/diary", { headers: { cookie } });
+    expect((await list.json()).data).toHaveLength(1);
+  });
+});
