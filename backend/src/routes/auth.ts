@@ -4,6 +4,7 @@ import { users } from "../db/index.ts";
 import { parseJson, buildSessionCookie, clearSessionCookie } from "../helpers.ts";
 import { loginSchema, registerSchema, changePasswordSchema } from "../schemas.ts";
 import { getSession, createSession, deleteSession, deleteUserSessions, requireAuth } from "../middleware/auth.ts";
+import { authRateLimit } from "../middleware/rate-limit.ts";
 import type { AppEnv as Env } from "../app-env.ts";
 
 async function verifyPassword(password: string, storedHash: string): Promise<{ ok: boolean; rehash?: string }> {
@@ -33,7 +34,7 @@ const auth = new Hono<Env>();
  * verification step would only be checking a password against a hash written
  * one line earlier.
  */
-auth.post("/register", async (c) => {
+auth.post("/register", authRateLimit, async (c) => {
   const db = c.get("db");
   const body = await parseJson(c, registerSchema);
 
@@ -73,7 +74,7 @@ auth.post("/register", async (c) => {
   return c.json({ data: { email: created.email, name: created.name ?? null } }, 201);
 });
 
-auth.post("/login", async (c) => {
+auth.post("/login", authRateLimit, async (c) => {
   const db = c.get("db");
   const body = await parseJson(c, loginSchema);
   const user = db

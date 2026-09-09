@@ -444,3 +444,23 @@ describe("POST /auth/change-password", () => {
     }
   });
 });
+
+describe("auth rate limit", () => {
+  test("blocks the 11th attempt from one address within the window, others unaffected", async () => {
+    const ctx = createTestDb();
+    const app = createTestApp(ctx, "/auth", authRoute);
+    const attempt = (ip: string) =>
+      app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": ip },
+        body: JSON.stringify({ email: "nobody@example.com", password: "WrongPassword!" }),
+      });
+    for (let i = 0; i < 10; i++) {
+      expect((await attempt("203.0.113.7")).status).toBe(401);
+    }
+    const blocked = await attempt("203.0.113.7");
+    expect(blocked.status).toBe(429);
+    expect((await blocked.json()).error.code).toBe("RATE_LIMITED");
+    expect((await attempt("203.0.113.8")).status).toBe(401);
+  });
+});
