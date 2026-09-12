@@ -109,7 +109,6 @@ export function isoDate(day: string, month: string, year: string, months: string
 }
 
 export function amounts(text: string, pattern: RegExp): number[] {
-  pattern.lastIndex = 0;
   const found: number[] = [];
   for (const match of text.matchAll(pattern)) {
     const digits = pattern === EN_AMOUNT
@@ -177,7 +176,6 @@ export function byMonth(rows: ImportRow[]): ImportRow[] {
     .sort((a, b) => a.txDate.localeCompare(b.txDate) || a.tipo.localeCompare(b.tipo));
 }
 
-export const SKIP_NO_AMOUNT = "rows with no amount";
 export const SKIP_NON_EURO = "rows in another currency";
 
 export function countSkip(counts: Map<string, number>, reason: string): void {

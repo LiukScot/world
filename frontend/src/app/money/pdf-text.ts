@@ -17,12 +17,12 @@ export async function extractPages(data: ArrayBuffer): Promise<Pages> {
   const task = getDocument({ data });
   try {
     const pdf = await task.promise;
-    const pages: Pages = [];
-    for (let page = 1; page <= pdf.numPages; page += 1) {
-      const content = await (await pdf.getPage(page)).getTextContent();
-      pages.push(content.items.filter((item): item is TextItem => "str" in item));
-    }
-    return pages;
+    return await Promise.all(
+      Array.from({ length: pdf.numPages }, async (_, index) => {
+        const content = await (await pdf.getPage(index + 1)).getTextContent();
+        return content.items.filter((item): item is TextItem => "str" in item);
+      }),
+    );
   } finally {
     await task.destroy();
   }

@@ -1,4 +1,12 @@
-/** The Revolut Securities account statement: the robo-advisor portfolio. */
+/**
+ * The Revolut Securities account statement: the robo-advisor portfolio.
+ *
+ * This statement states no totals for what was paid in, earned or charged, so
+ * the market revaluation can only be what the classified rows leave unexplained.
+ * That makes it a plug: anything the loop below drops silently becomes a
+ * market gain. Every line in the transaction table therefore has to be either
+ * classified or refused, never skipped for being unreadable.
+ */
 
 import {
   amounts,
@@ -12,7 +20,6 @@ import {
   ROBO_ASSET,
   skippedList,
   SKIP_NON_EURO,
-  SKIP_NO_AMOUNT,
   StatementError,
   TOLERANCE,
   unclassified,
@@ -87,10 +94,10 @@ export function parseRobo(lines: string[]): ParsedStatement {
       countSkip(skipped, SKIP_TRADES);
       continue;
     }
-    if (value === undefined) {
-      countSkip(skipped, SKIP_NO_AMOUNT);
-      continue;
-    }
+    // Not skipped: the revaluation below is what the other rows do not
+    // explain, so a transaction read without its amount would be quietly
+    // rebadged as a market gain instead of the top-up or fee it is.
+    if (value === undefined) throw unclassified(line);
     if (line.includes("Cash top-up")) {
       topUps += value;
       rows.push({ txDate, asset: ROBO_ASSET, tipo: "nuovo vincolo", buyValue: value, pnl: 0, note: "" });

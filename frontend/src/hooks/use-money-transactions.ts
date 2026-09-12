@@ -29,8 +29,8 @@ export type StatementPreview = {
   hasEarlierRows: boolean;
 };
 
-// Revolut's own statements are well under a megabyte; anything this large is
-// not one of them, and parsing it would freeze the tab before saying so.
+// The statements these parsers read are well under a megabyte; anything this
+// large is not one of them, and parsing it would freeze the tab before saying so.
 const MAX_STATEMENT_BYTES = 20 * 1024 * 1024;
 
 // The server's own maximum page size. The overlap warning has to see every row
@@ -158,7 +158,7 @@ export function useMoneyTransactions(enabled: boolean) {
   // so it is fetched on the first file rather than on every page load.
   const readStatement = async (file: File) => {
     if (file.size > MAX_STATEMENT_BYTES) {
-      toast.error("That file is too large to be a Revolut statement.");
+      toast.error("That file is too large to be a bank statement.");
       return;
     }
     setReading(true);

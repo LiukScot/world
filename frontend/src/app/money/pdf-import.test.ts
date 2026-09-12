@@ -190,6 +190,14 @@ describe("robo statement", () => {
     expect(() => parseStatement([asPage(broken)])).toThrow(/both positions and cash/);
   });
 
+  it("refuses a top-up whose amount it cannot read", () => {
+    // The revaluation is whatever the classified rows leave unexplained, so a
+    // top-up read without its amount would silently become a market gain:
+    // capital booked as profit, with every total still adding up.
+    const broken = [...ROBO, "09 Apr 2026 10:00:00 GMT Cash top-up EUR 120"];
+    expect(() => parseStatement([asPage(broken)])).toThrow(/Unrecognised transaction/);
+  });
+
   it("refuses a row it cannot classify instead of folding it into the revaluation", () => {
     const broken = [...ROBO, "09 Apr 2026 10:00:00 GMT Account closure payout €120 €0 €0"];
     expect(() => parseStatement([asPage(broken)])).toThrow(/Unrecognised transaction/);

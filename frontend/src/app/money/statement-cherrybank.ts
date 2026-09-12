@@ -43,8 +43,13 @@ const CHERRY_INTERNAL = ["SOTTOSCRIZIONE TIME DEPOSIT", "RIMBORSO PARTITA TIME D
 /** Interest earned by the deposits, credited to the current account. */
 const CHERRY_INTEREST = "COMPETENZE TIME DEPOSIT";
 
-/** Stamp duty on the deposits, charged to the current account. */
-const CHERRY_STAMP_DUTY = "IMPOSTA BOLLO";
+/**
+ * What the bank charges rather than what the account pays out. Anything else
+ * is read as capital moving in or out, so a charge missing from this list
+ * would be booked as money withdrawn: the account would still be worth the
+ * right amount, but the cost would show up as capital instead of a loss.
+ */
+const CHERRY_COSTS = ["IMPOSTA BOLLO", "RITENUTA", "SPESE", "COMMISSION", "INTERESSI DEBITORI"];
 
 const SKIP_INTERNAL = "moves between the current account and its deposits, which are both this asset";
 
@@ -116,7 +121,7 @@ export function parseCherry(pages: Pages, lines: string[]): ParsedStatement {
   for (const page of pages) {
     for (const row of cherryRowsOfPage(page)) {
       everything += row.amount;
-      if (CHERRY_INTERNAL.some((match) => row.description.includes(match))) {
+      if (CHERRY_INTERNAL.some((match) => row.description.toUpperCase().includes(match))) {
         countSkip(skipped, SKIP_INTERNAL);
         continue;
       }
@@ -124,9 +129,10 @@ export function parseCherry(pages: Pages, lines: string[]): ParsedStatement {
       // the account's own view is the asset's view: money arriving is capital
       // put in, money leaving is capital taken out, interest is what the
       // deposits earned and stamp duty what holding them cost.
-      const tipo = row.description.includes(CHERRY_INTEREST)
+      const description = row.description.toUpperCase();
+      const tipo = description.includes(CHERRY_INTEREST)
         ? "cedola"
-        : row.description.includes(CHERRY_STAMP_DUTY)
+        : CHERRY_COSTS.some((match) => description.includes(match))
           ? "commissione"
           : "nuovo vincolo";
       rows.push({

@@ -247,6 +247,18 @@ describe("money transactions import", () => {
     expect(await listAll(app, cookie)).toHaveLength(0);
   });
 
+  test("rejects a row that falls outside the period it replaces", async () => {
+    // A row written outside the window it replaced is a row the next import of
+    // the same statement cannot clear, which is how stale rows survive.
+    const { app, cookie } = await setup();
+    const bad = await importRows(app, cookie, {
+      rows: IMPORT_ROWS,
+      replace: { from: "2026-02-01", to: "2026-02-28" },
+    });
+    expect(bad.res.status).toBe(400);
+    expect(await listAll(app, cookie)).toHaveLength(0);
+  });
+
   test("rejects a malformed row without importing the rest", async () => {
     const { app, cookie } = await setup();
     const bad = await importRows(app, cookie, {

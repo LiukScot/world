@@ -100,7 +100,7 @@ export function StatementImportButton({
         name="statement"
         type="file"
         accept="application/pdf,.pdf"
-        aria-label="Import a Revolut PDF statement"
+        aria-label="Import a PDF bank statement"
         disabled={reading}
         className="absolute inset-0 opacity-0 cursor-pointer"
         onChange={(e) => {
@@ -221,7 +221,7 @@ export function StatementImportPreview({
         <Button type="button" onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>
-        <Button type="button" variant="primary" onClick={onConfirm} disabled={isSaving}>
+        <Button type="button" variant="primary" onClick={onConfirm} disabled={isSaving || unaccountedOpening}>
           {isSaving ? "Importing..." : `Import ${parsed.rows.length}`}
         </Button>
       </div>

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import type { z } from "zod";
 import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { transactions } from "../db/index.ts";
@@ -20,6 +21,15 @@ function deriveFields(body: z.infer<typeof txSchema>) {
     currentValue: Number.isFinite(body.currentValue) ? Number(body.currentValue) : body.buyValue + body.pnl,
   };
 }
+
+// A statement of the maximum 5 000 rows is a few hundred kB of JSON. Anything
+// past this is not one, and refusing it early keeps the body out of memory.
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+
+const limitImportSize = bodyLimit({
+  maxSize: MAX_IMPORT_BYTES,
+  onError: (c) => c.json({ error: { code: "BODY_TOO_LARGE", message: "Import exceeds 2 MB limit" } }, 413),
+});
 
 /** Identifies a row by what it records, so re-importing a statement is a no-op. */
 function dedupeKey(row: { txDate: string; asset: string; tipo: string; buyValue: number; pnl: number }): string {
@@ -64,7 +74,7 @@ moneyTransactions.post("/", async (c) => {
   return c.json({ data: { id } }, 201);
 });
 
-moneyTransactions.post("/import", async (c) => {
+moneyTransactions.post("/import", limitImportSize, async (c) => {
   const db = c.get("db");
   const rawDb = c.get("rawDb");
   const userId = c.get("userId");
@@ -72,6 +82,14 @@ moneyTransactions.post("/import", async (c) => {
   const { replace } = body;
   if (replace && replace.from > replace.to) {
     return c.json({ error: { code: "INVALID_RANGE", message: "Replacement period ends before it starts" } }, 400);
+  }
+  // The period is the client's, the deletion is not: a window wider than the
+  // rows it comes with would clear history the statement says nothing about.
+  if (replace && body.rows.some((row) => row.txDate < replace.from || row.txDate > replace.to)) {
+    return c.json(
+      { error: { code: "ROWS_OUTSIDE_RANGE", message: "Every imported row must fall inside the replaced period" } },
+      400,
+    );
   }
 
   // Both the replacement and the duplicate check are confined to what the
