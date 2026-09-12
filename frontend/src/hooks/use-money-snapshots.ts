@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiEnvelopeSchema, apiFetch } from "../lib";
 import {
+  assetsWithoutRisk,
   computeRiskTotals,
   freshSnapshotDefaults,
   snapshotFormSchema,
@@ -52,6 +53,13 @@ export function useMoneySnapshots(enabled: boolean) {
   const snapshotForm = useForm<SnapshotFormValues>({ defaultValues: freshSnapshotDefaults() });
 
   const canSave = transactionsQuery.isSuccess && stylesQuery.isSuccess;
+
+  // A snapshot splits the portfolio across the three risk buckets, so an asset
+  // with no risk level would be dropped from the total without saying so.
+  const assetsMissingRisk =
+    transactionsQuery.data && stylesQuery.data
+      ? assetsWithoutRisk(transactionsQuery.data, stylesQuery.data)
+      : [];
 
   const snapshotMutation = useMutation({
     mutationFn: async (values: SnapshotFormValues) => {
@@ -104,6 +112,7 @@ export function useMoneySnapshots(enabled: boolean) {
     snapshots: (snapshotsQuery.data ?? []) as Snapshot[],
     isLoading: snapshotsQuery.isLoading,
     canSave,
+    assetsMissingRisk,
     snapshotForm,
     snapshotMutation,
     confirmDeleteSnapshot,

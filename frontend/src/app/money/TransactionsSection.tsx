@@ -19,12 +19,15 @@ import {
   ENTRY_PREVIEW,
   ENTRY_ROW,
   ENTRY_SUMMARY,
+  EntriesHeading,
   PainBadge,
   PastEntries,
   EntryMonths,
   EntryViewTabs,
   type EntryView,
 } from "../entries";
+import { StatementImportButton, StatementImportPreview, SupportedStatements } from "./StatementImport";
+import type { StatementPreview } from "../../hooks/use-money-transactions";
 import {
   formatCurrency,
   formatTxDate,
@@ -51,6 +54,7 @@ export function TransactionsSection({
   onDeleteBlur,
   view,
   onViewChange,
+  statementImport,
 }: {
   txForm: UseFormReturn<TxFormValues>;
   txMutationState: { isSuccess: boolean };
@@ -66,6 +70,16 @@ export function TransactionsSection({
   onDeleteBlur: () => void;
   view: EntryView;
   onViewChange: (next: EntryView) => void;
+  statementImport: {
+    reading: boolean;
+    preview: StatementPreview | null;
+    replace: boolean;
+    isSaving: boolean;
+    onSetReplace: (next: boolean) => void;
+    onPickFile: (file: File) => void;
+    onCancel: () => void;
+    onConfirm: () => void;
+  };
 }) {
   const assetListId = useId();
   const watchedTipo = txForm.watch("tipo");
@@ -76,7 +90,23 @@ export function TransactionsSection({
     <section className={PAGE}>
       <EntryViewTabs view={view} onChange={onViewChange} labels={entryViewLabels["money-transactions"]} className="inline-flex max-mobile:hidden" />
       <h1 className={PAGE_TITLE}>Transactions</h1>
-      {view === "new" ? (
+      {view === "new" && statementImport.preview ? (
+      <StatementImportPreview
+        preview={statementImport.preview}
+        replace={statementImport.replace}
+        isSaving={statementImport.isSaving}
+        onSetReplace={statementImport.onSetReplace}
+        onCancel={statementImport.onCancel}
+        onConfirm={statementImport.onConfirm}
+      />
+      ) : view === "new" ? (
+      // Two ways to add a transaction, side by side once there is room for
+      // both. The form gets the wider half because it holds the fields, and
+      // each half is its own container so those fields measure the half they
+      // sit in rather than the whole page.
+      <div className="grid gap-page items-start min-w-0 xwide:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className={`@container ${FLAT_SHELL}`}>
+      <EntriesHeading>Add manually</EntriesHeading>
       <form onSubmit={txForm.handleSubmit(onSubmit)} className={FLAT_SHELL}>
         <div className={FLAT_FORM}>
         <div className={FLAT_ROW}>
@@ -170,6 +200,21 @@ export function TransactionsSection({
           </Button>
         </div>
       </form>
+      </div>
+
+      <div className={`@container ${FLAT_SHELL}`}>
+        <EntriesHeading>Import from PDF</EntriesHeading>
+        <div className={FLAT_FORM}>
+          <SupportedStatements />
+          <p className="m-0 text-hint text-muted max-w-[60ch]">
+            Nothing is written until you have seen what the file contains.
+          </p>
+        </div>
+        <div className={FLAT_ACTIONS}>
+          <StatementImportButton reading={statementImport.reading} onPickFile={statementImport.onPickFile} />
+        </div>
+      </div>
+      </div>
       ) : (
 
       <PastEntries

@@ -1,9 +1,10 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import type { z } from "zod";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { transactions } from "../db/index.ts";
 import { parseJson } from "../helpers.ts";
-import { txSchema } from "../schemas.ts";
+import { txImportSchema, txSchema } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
 import { inferType, makeId, normalizeTx, readPageBounds } from "../money-helpers.ts";
 import type { AppEnv as Env } from "../app-env.ts";
@@ -19,6 +20,20 @@ function deriveFields(body: z.infer<typeof txSchema>) {
     derivedType: body.derivedType || inferType(body.tipo, body.buyValue, body.pnl),
     currentValue: Number.isFinite(body.currentValue) ? Number(body.currentValue) : body.buyValue + body.pnl,
   };
+}
+
+// A statement of the maximum 5 000 rows is a few hundred kB of JSON. Anything
+// past this is not one, and refusing it early keeps the body out of memory.
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+
+const limitImportSize = bodyLimit({
+  maxSize: MAX_IMPORT_BYTES,
+  onError: (c) => c.json({ error: { code: "BODY_TOO_LARGE", message: "Import exceeds 2 MB limit" } }, 413),
+});
+
+/** Identifies a row by what it records, so re-importing a statement is a no-op. */
+function dedupeKey(row: { txDate: string; asset: string; tipo: string; buyValue: number; pnl: number }): string {
+  return [row.txDate, row.asset, row.tipo, row.buyValue.toFixed(2), row.pnl.toFixed(2)].join("|");
 }
 
 moneyTransactions.get("/", (c) => {
@@ -57,6 +72,97 @@ moneyTransactions.post("/", async (c) => {
     })
     .run();
   return c.json({ data: { id } }, 201);
+});
+
+moneyTransactions.post("/import", limitImportSize, async (c) => {
+  const db = c.get("db");
+  const rawDb = c.get("rawDb");
+  const userId = c.get("userId");
+  const body = await parseJson(c, txImportSchema);
+  const { replace } = body;
+  if (replace && replace.from > replace.to) {
+    return c.json({ error: { code: "INVALID_RANGE", message: "Replacement period ends before it starts" } }, 400);
+  }
+  // The period is the client's, the deletion is not: a window wider than the
+  // rows it comes with would clear history the statement says nothing about.
+  if (replace && body.rows.some((row) => row.txDate < replace.from || row.txDate > replace.to)) {
+    return c.json(
+      { error: { code: "ROWS_OUTSIDE_RANGE", message: "Every imported row must fall inside the replaced period" } },
+      400,
+    );
+  }
+
+  // Both the replacement and the duplicate check are confined to what the
+  // statement itself carries, so neither can reach a row it never mentions.
+  const assets = [...new Set(body.rows.map((row) => row.asset))];
+  const dates = body.rows.map((row) => row.txDate).sort();
+  const scope = and(
+    eq(transactions.userId, userId),
+    inArray(transactions.asset, assets),
+    gte(transactions.txDate, dates[0]!),
+    lte(transactions.txDate, dates[dates.length - 1]!),
+  );
+
+  const apply = rawDb.transaction(() => {
+    const deleted = replace
+      ? db
+          .delete(transactions)
+          .where(
+            and(
+              eq(transactions.userId, userId),
+              inArray(transactions.asset, assets),
+              gte(transactions.txDate, replace.from),
+              lte(transactions.txDate, replace.to),
+            ),
+          )
+          .returning({ id: transactions.id })
+          .all().length
+      : 0;
+
+    const existing = new Set(
+      db
+        .select({
+          txDate: transactions.txDate,
+          asset: transactions.asset,
+          tipo: transactions.tipo,
+          buyValue: transactions.buyValue,
+          pnl: transactions.pnl,
+        })
+        .from(transactions)
+        .where(scope)
+        .all()
+        .map(dedupeKey),
+    );
+
+    const fresh = body.rows.filter((row) => {
+      const key = dedupeKey(row);
+      if (existing.has(key)) return false;
+      // Guards against a statement that repeats a row within the same file.
+      existing.add(key);
+      return true;
+    });
+
+    if (fresh.length > 0) {
+      db.insert(transactions)
+        .values(
+          fresh.map((row) => ({
+            id: makeId("tx"),
+            userId,
+            txDate: row.txDate,
+            asset: row.asset,
+            tipo: row.tipo,
+            ...deriveFields(row),
+            buyValue: row.buyValue,
+            pnl: row.pnl,
+            note: row.note,
+          })),
+        )
+        .run();
+    }
+    return { inserted: fresh.length, skipped: body.rows.length - fresh.length, deleted };
+  });
+
+  return c.json({ data: apply() });
 });
 
 moneyTransactions.put("/:id", async (c) => {

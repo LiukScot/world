@@ -466,7 +466,7 @@ function App() {
             confirmDeleteTx={moneyTx.confirmDeleteTx}
             onSubmit={(v) => moneyTx.txMutation.mutate(v)} onCancelEdit={moneyTx.resetTxForm}
             onStartEdit={moneyTx.startTxEdit} onDeleteClick={moneyTx.onDeleteClick}
-            onDeleteBlur={moneyTx.onDeleteBlur}
+            onDeleteBlur={moneyTx.onDeleteBlur} statementImport={moneyTx.statementImport}
           />
         )}
 
@@ -491,6 +491,7 @@ function App() {
             snapshotForm={moneySnapshots.snapshotForm}
             snapshotMutationState={{ isSuccess: moneySnapshots.snapshotMutation.isSuccess }}
             isLoading={moneySnapshots.isLoading} canSave={moneySnapshots.canSave}
+            assetsMissingRisk={moneySnapshots.assetsMissingRisk}
             snapshots={moneySnapshots.snapshots} confirmDeleteSnapshot={moneySnapshots.confirmDeleteSnapshot}
             onSubmit={(v) => moneySnapshots.snapshotMutation.mutate(v)}
             onDeleteClick={moneySnapshots.onDeleteClick} onDeleteBlur={moneySnapshots.onDeleteBlur}

@@ -5,6 +5,13 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [tailwindcss(), react()],
+  optimizeDeps: {
+    // Only the statement import reaches for it, and only through a dynamic
+    // import, so the dev server does not see it while it prepares dependencies
+    // at startup. Discovering it on the first click means re-bundling mid
+    // request, which answers that request with a 504 and fails the import.
+    include: ["pdfjs-dist"],
+  },
   build: {
     // Sections, the wellbeing chart, and the emoji-heavy memorable-days view are
     // already React.lazy-split; the only chunk over 500 kB is memorable-days,

@@ -25,6 +25,7 @@ export const TIPO_OPTIONS = [
   "interessi",
   "cashback",
   "Variazione Valore",
+  "commissione",
 ] as const;
 
 // "nuovo vincolo" is the only tipo that books money in; the others record a
@@ -207,6 +208,22 @@ export function computeRiskTotals(
     if (stat.riskLevel) totals[stat.riskLevel] += stat.current;
   }
   return { low: round2(totals.low), medium: round2(totals.medium), high: round2(totals.high) };
+}
+
+/**
+ * The assets a snapshot would silently leave out: they are worth something but
+ * carry no risk level, so they land in no bucket and the snapshot adds up to
+ * less than the portfolio. Names come back sorted. An asset sold down to zero
+ * is left out, since it would contribute nothing to a snapshot anyway.
+ */
+export function assetsWithoutRisk(
+  transactions: readonly Transaction[],
+  styles: StylesMap,
+): string[] {
+  return filterVisibleAssets(computePerAsset(transactions, styles), false)
+    .filter((stat) => stat.riskLevel === null)
+    .map((stat) => stat.asset)
+    .sort();
 }
 
 // ── Dashboard ────────────────────────────────────────────────────────────
