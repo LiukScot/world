@@ -307,7 +307,10 @@ const CHERRY_PAGE = [
     "SCADENZA 10/03/2026",
   ]),
   ...cherryRow(400, "15/03/2026", "14/03/2026", { amount: "625,00", column: "avere" }, [
+    // A SEPA transfer states its own fee fields, zero here. Matching a bare
+    // "SPESE" or "COMM" against a description would read this as a charge.
     "BONIFICO A VOSTRO FAVORE Data Regolamento: 14/03/26",
+    "DIV SPESE EUR IMP SPESE 0,00 DIV COMM EUR IMP COMM 0,00",
   ]),
   ...asPage(["Saldo Contabile Iniziale 01/01/2026 +0,00 Euro"]).map((f) => at(f.str, 50, 100)),
 ];
@@ -321,6 +324,7 @@ describe("Cherry Bank statement", () => {
   });
 
   it("books money arriving from outside as capital put in", () => {
+    // Capital, not a charge: the row states fees of zero, it does not charge them.
     expect(find(parsed.rows, "nuovo vincolo", "2026-03")).toMatchObject({ buyValue: 625, pnl: 0 });
   });
 

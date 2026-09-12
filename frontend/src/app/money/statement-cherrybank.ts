@@ -44,12 +44,12 @@ const CHERRY_INTERNAL = ["SOTTOSCRIZIONE TIME DEPOSIT", "RIMBORSO PARTITA TIME D
 const CHERRY_INTEREST = "COMPETENZE TIME DEPOSIT";
 
 /**
- * What the bank charges rather than what the account pays out. Anything else
- * is read as capital moving in or out, so a charge missing from this list
- * would be booked as money withdrawn: the account would still be worth the
- * right amount, but the cost would show up as capital instead of a loss.
+ * What the bank charges, as the statement spells it. Each has to be a phrase
+ * no other row can contain: a SEPA transfer carries its own fee fields in its
+ * description ("IMP SPESE 0,00", "IMP COMM 0,00"), so a bare "SPESE" or
+ * "COMM" matches every transfer ever received.
  */
-const CHERRY_COSTS = ["IMPOSTA BOLLO", "RITENUTA", "SPESE", "COMMISSION", "INTERESSI DEBITORI"];
+const CHERRY_COSTS = ["IMPOSTA BOLLO", "RITENUTA", "INTERESSI DEBITORI"];
 
 const SKIP_INTERNAL = "moves between the current account and its deposits, which are both this asset";
 
@@ -128,11 +128,12 @@ export function parseCherry(pages: Pages, lines: string[]): ParsedStatement {
       // Everything else is read with the sign the statement prints, because
       // the account's own view is the asset's view: money arriving is capital
       // put in, money leaving is capital taken out, interest is what the
-      // deposits earned and stamp duty what holding them cost.
+      // deposits earned and stamp duty what holding them cost. A charge only
+      // ever takes money out, so a credit is capital whatever its wording.
       const description = row.description.toUpperCase();
       const tipo = description.includes(CHERRY_INTEREST)
         ? "cedola"
-        : CHERRY_COSTS.some((match) => description.includes(match))
+        : row.amount < 0 && CHERRY_COSTS.some((match) => description.includes(match))
           ? "commissione"
           : "nuovo vincolo";
       rows.push({
