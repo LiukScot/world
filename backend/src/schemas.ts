@@ -176,6 +176,18 @@ export const txSchema = z.object({
   note: z.string().max(2000).default("")
 });
 
+/**
+ * A statement import. `replace` clears the rows an imported period would
+ * otherwise duplicate: monthly sums never match rows entered by hand over a
+ * different span, so deduplication alone cannot prevent double counting.
+ * It names only the period; which assets it may clear follows from `rows`, so
+ * a replacement can never reach an asset the statement does not carry.
+ */
+export const txImportSchema = z.object({
+  rows: z.array(txSchema).min(1).max(5_000),
+  replace: z.object({ from: moneyIsoDate, to: moneyIsoDate }).optional()
+});
+
 export const MOVEMENT_CADENCES = ["monthly", "annual"] as const;
 
 export const movementSchema = z.object({

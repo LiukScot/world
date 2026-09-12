@@ -12,6 +12,7 @@ export function makeId(prefix: string): string {
 
 export function inferType(tipo: string, buyValue: number, pnl: number): string {
   if (tipo === "nuovo vincolo") return buyValue >= 0 ? "buy" : "sell";
+  if (tipo === "commissione") return "fee";
   if (tipo === "cedola" || tipo === "interessi" || tipo === "cashback") return pnl >= 0 ? "return" : "fee";
   if (tipo === "Variazione Valore") return pnl >= 0 ? "value-up" : "value-down";
   if (buyValue >= 0 && pnl >= 0) return "buy";

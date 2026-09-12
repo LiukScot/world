@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   amountIn,
+  assetsWithoutRisk,
   computeKpis,
   computePerAsset,
   computeRiskTotals,
@@ -107,6 +108,36 @@ describe("transactionSchema", () => {
       updatedAt: "2026-03-14 10:00:00",
     };
     expect(transactionSchema.safeParse(row).success).toBe(true);
+  });
+});
+
+describe("assetsWithoutRisk", () => {
+  const tx = (asset: string, currentValue: number) => ({
+    id: `tx-${asset}-${currentValue}`, txDate: "2026-01-01", asset, tipo: "nuovo vincolo",
+    derivedType: "buy", buyValue: currentValue, pnl: 0, currentValue, note: "",
+    createdAt: "", updatedAt: "",
+  });
+  const style = (riskLevel: string | null) => ({ colorHex: null, riskLevel });
+
+  test("names the assets a snapshot would drop, sorted", () => {
+    expect(
+      assetsWithoutRisk([tx("zeta", 10), tx("alpha", 20), tx("classified", 30)], {
+        classified: style("low"),
+        alpha: style(null),
+      }),
+    ).toEqual(["alpha", "zeta"]);
+  });
+
+  test("counts an unknown risk level as missing, like the snapshot does", () => {
+    expect(assetsWithoutRisk([tx("A", 10)], { A: style("extreme") })).toEqual(["A"]);
+  });
+
+  test("leaves out an asset sold down to zero, which no snapshot would miss", () => {
+    expect(assetsWithoutRisk([tx("A", 100), tx("A", -100)], {})).toEqual([]);
+  });
+
+  test("says nothing when every asset carries a level", () => {
+    expect(assetsWithoutRisk([tx("A", 10), tx("B", 20)], { A: style("low"), B: style("high") })).toEqual([]);
   });
 });
 

@@ -6,7 +6,7 @@ import { FieldLine } from "../../components/ui/FieldLine";
 import { EmptyState, PAGE, PAGE_TITLE } from "../screen-helpers";
 import { entryViewLabels } from "../core";
 import { FLAT_ACTIONS, FLAT_FORM, FLAT_ROW, FLAT_SHELL, StageField } from "../staged";
-import { SectionHead } from "../shared";
+import { InlineFeedback, SectionHead } from "../shared";
 import { FIELD_LINE_INPUT } from "../../components/ui/FieldLine";
 import {
   DELETE_CONFIRM,
@@ -25,6 +25,12 @@ import {
 } from "../entries";
 import { formatCurrency, formatTxDate, type Snapshot, type SnapshotFormValues } from "./core";
 
+/** "a", "a and b", "a, b and c" — a sentence, not a dump of a list. */
+function listAssets(assets: string[]): string {
+  if (assets.length <= 2) return assets.join(" and ");
+  return `${assets.slice(0, -1).join(", ")} and ${assets[assets.length - 1]}`;
+}
+
 // chart.js is the heaviest thing on this screen and only matters once there
 // is something to plot, so it stays out of the panel's own chunk.
 const MonthlyRiskChart = lazy(() => import("./MonthlyRiskChart"));
@@ -34,6 +40,7 @@ export function SnapshotsSection({
   snapshotMutationState,
   isLoading,
   canSave,
+  assetsMissingRisk,
   snapshots,
   confirmDeleteSnapshot,
   onSubmit,
@@ -46,6 +53,7 @@ export function SnapshotsSection({
   snapshotMutationState: { isSuccess: boolean };
   isLoading: boolean;
   canSave: boolean;
+  assetsMissingRisk: string[];
   snapshots: Snapshot[];
   confirmDeleteSnapshot: string | null;
   onSubmit: (values: SnapshotFormValues) => void;
@@ -92,11 +100,25 @@ export function SnapshotsSection({
 
         </div>
 
+        {assetsMissingRisk.length > 0 ? (
+          <InlineFeedback
+            className="max-w-[60ch]"
+            message={{
+              tone: "warning",
+              text: `No risk level set for ${listAssets(assetsMissingRisk)}. A snapshot would leave that out of the total, so set it in the Money settings.`,
+            }}
+          />
+        ) : null}
+
         <div className={FLAT_ACTIONS}>
           {!canSave ? (
             <span className="text-control text-muted self-center">Loading transactions and asset styles…</span>
           ) : null}
-          <Button type="submit" disabled={!canSave} variant={snapshotMutationState.isSuccess ? "success" : "primary"}>
+          <Button
+            type="submit"
+            disabled={!canSave || assetsMissingRisk.length > 0}
+            variant={snapshotMutationState.isSuccess ? "success" : "primary"}
+          >
             {snapshotMutationState.isSuccess ? "✓ Saved" : "Take snapshot"}
           </Button>
         </div>

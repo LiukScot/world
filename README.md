@@ -15,6 +15,13 @@ navigation and accent colour.
 **Money** — portfolio, transactions, monthly movements and snapshots. Being
 folded in from its own repo; the panels land one at a time.
 
+- Import a bank PDF statement from the Transactions panel instead of typing the
+  rows. Three are read: the Revolut robo-advisor statement, which also yields the
+  period's revaluation; the Revolut savings statement; and the Cherry Bank account
+  statement, read as the current account and the deposits it feeds together.
+  The file is read in the browser and only the resulting transactions are sent. A statement whose own totals do not match its rows is
+  refused.
+
 ---
 
 ## Development
