@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { eq, desc } from "drizzle-orm";
 import ExcelJS from "exceljs";
 import type { DrizzleDB } from "../db/index.ts";
@@ -25,6 +26,18 @@ import type { AppEnv as Env } from "../app-env.ts";
 const backup = new Hono<Env>();
 
 backup.use(requireAuth);
+
+const XLSX_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+// base64 4 chars encode 3 raw bytes; pre-check string length before decode
+const XLSX_UPLOAD_MAX_BASE64_CHARS = Math.ceil(XLSX_UPLOAD_MAX_BYTES / 3) * 4 + 4;
+
+// Rejects an oversized import before c.req.json()/formData() buffers it: the
+// row and file-size checks below only run once the whole body is in memory,
+// and the container has 512 MB. Same cap as the money backup routes.
+const limitUploadSize = bodyLimit({
+  maxSize: XLSX_UPLOAD_MAX_BYTES,
+  onError: (c) => c.json({ error: { code: "FILE_TOO_LARGE", message: "Import exceeds 10 MB limit" } }, 413),
+});
 
 function loadHealthBackup(db: DrizzleDB, userId: number) {
   const diaryRows = db.select().from(diaryEntries).where(eq(diaryEntries.userId, userId))
@@ -96,7 +109,7 @@ backup.get("/json", (c) => {
 });
 
 // JSON import and XLSX routes use rawDb for transactions (bulk ops with prepared statements)
-backup.post("/json/import", async (c) => {
+backup.post("/json/import", limitUploadSize, async (c) => {
   const rawDb = c.get("rawDb");
   const userId = c.get("userId");
   const body = await parseJson(c, backupImportSchema);
@@ -271,15 +284,12 @@ backup.get("/xlsx", async (c) => {
   });
 });
 
-const XLSX_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
-// base64 4 chars encode 3 raw bytes; pre-check string length before decode
-const XLSX_UPLOAD_MAX_BASE64_CHARS = Math.ceil(XLSX_UPLOAD_MAX_BYTES / 3) * 4 + 4;
 const XLSX_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-excel",
 ]);
 
-backup.post("/xlsx/import", async (c) => {
+backup.post("/xlsx/import", limitUploadSize, async (c) => {
   const rawDb = c.get("rawDb");
   const userId = c.get("userId");
 

@@ -12,10 +12,11 @@ FROM oven/bun:1.4.2
 WORKDIR /app
 
 COPY backend/package.json backend/bun.lock* ./backend/
-RUN cd backend && bun install --production
+RUN cd backend && bun install --production --frozen-lockfile
 
 COPY backend/ ./backend/
-COPY scripts/ ./scripts/
+# Only the bun launcher the backend package scripts call; the rest of scripts/ is host-side tooling.
+COPY scripts/run-bun.sh ./scripts/run-bun.sh
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 RUN mkdir -p /app/data
