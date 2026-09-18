@@ -16,9 +16,9 @@
     "cookie": "^2.0.1",
     "drizzle-orm": "^0.45.2",
     "exceljs": "^4.4.0",
-    "hono": "^4.13.5",
+    "hono": "^4.13.7",
     "hono-rate-limiter": "^0.5.4",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "overrides": {
     "esbuild": ">=0.28.1",
@@ -32,9 +32,9 @@
     "brace-expansion": "^1.1.17"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.0",
+    "@types/bun": "^1.4.1",
     "@types/cookie": "^1.0.0",
-    "@types/node": "^26.3.0",
+    "@types/node": "^26.4.0",
     "drizzle-kit": "^0.31.10",
     "typescript": "^7.0.2"
   }
