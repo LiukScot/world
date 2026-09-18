@@ -56,6 +56,9 @@ async function main() {
     if (!result.changes) {
       throw new Error(`User not found: ${email}`);
     }
+    // Same as the change-password endpoint: a reset is what a leaked password
+    // calls for, so every session the old one opened goes with it.
+    db.query(`DELETE FROM sessions WHERE user_id = (SELECT id FROM users WHERE email = ?)`).run(email);
     console.log(`Password reset for ${email}`);
     db.close();
     return;

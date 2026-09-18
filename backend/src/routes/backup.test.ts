@@ -425,3 +425,17 @@ describe("import rejects rows with a bad date", () => {
     expect((await list.json()).data).toHaveLength(1);
   });
 });
+
+describe("import size limit", () => {
+  test("refuses a body over 10 MB before reading it", async () => {
+    const { app, cookie } = await setup();
+    const oversized = JSON.stringify({ diary: { rows: [{ date: "2026-05-16", hour: "08:30", description: "x".repeat(10 * 1024 * 1024) }] } });
+    const res = await app.request("/backup/json/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: oversized,
+    });
+    expect(res.status).toBe(413);
+    expect((await res.json()).error.code).toBe("FILE_TOO_LARGE");
+  });
+});
