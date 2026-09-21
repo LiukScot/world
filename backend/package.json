@@ -32,9 +32,9 @@
     "brace-expansion": "^1.1.17"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.1",
+    "@types/bun": "^1.4.2",
     "@types/cookie": "^1.0.0",
-    "@types/node": "^26.4.0",
+    "@types/node": "^26.5.0",
     "drizzle-kit": "^0.31.10",
     "typescript": "^7.0.2"
   }
