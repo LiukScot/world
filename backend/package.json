@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "cookie": "^2.0.1",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "^0.45.3",
     "exceljs": "^4.4.0",
-    "hono": "^4.13.7",
+    "hono": "^4.13.8",
     "hono-rate-limiter": "^0.5.4",
     "zod": "^4.5.4"
   },
@@ -34,8 +34,8 @@
   "devDependencies": {
     "@types/bun": "^1.4.2",
     "@types/cookie": "^1.0.0",
-    "@types/node": "^26.5.0",
-    "drizzle-kit": "^0.31.10",
+    "@types/node": "^26.5.1",
+    "drizzle-kit": "^0.31.11",
     "typescript": "^7.0.2"
   }
 }
