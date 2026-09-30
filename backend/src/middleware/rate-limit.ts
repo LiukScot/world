@@ -17,19 +17,30 @@ function clientIp(c: Context): string | null {
   }
 }
 
+// In-memory, so the counter resets with the process and is per instance; that
+// matches the single-container deployment this app has.
+function perClientLimit(skipSuccessfulRequests: boolean) {
+  return rateLimiter({
+    windowMs: WINDOW_MS,
+    limit: ATTEMPTS_PER_WINDOW,
+    standardHeaders: "draft-6",
+    skipSuccessfulRequests,
+    keyGenerator: (c) => clientIp(c) ?? "",
+    skip: (c) => clientIp(c) === null,
+    handler: (c) =>
+      c.json({ error: { code: "RATE_LIMITED", message: "Too many attempts, try again in a few minutes" } }, 429),
+  });
+}
+
 /**
  * Caps credential guessing per client IP: only rejected attempts count, so
- * signing in normally never trips it. In-memory, so the counter resets
- * with the process and is per instance; that matches the single-container
- * deployment this app has.
+ * signing in normally never trips it.
  */
-export const authRateLimit = rateLimiter({
-  windowMs: WINDOW_MS,
-  limit: ATTEMPTS_PER_WINDOW,
-  standardHeaders: "draft-6",
-  skipSuccessfulRequests: true,
-  keyGenerator: (c) => clientIp(c) ?? "",
-  skip: (c) => clientIp(c) === null,
-  handler: (c) =>
-    c.json({ error: { code: "RATE_LIMITED", message: "Too many attempts, try again in a few minutes" } }, 429),
-});
+export const authRateLimit = perClientLimit(true);
+
+/**
+ * Caps account creation per client IP. Every request counts: a successful
+ * registration is the thing being limited, since each one costs a password
+ * hash and leaves a row behind.
+ */
+export const registerRateLimit = perClientLimit(false);

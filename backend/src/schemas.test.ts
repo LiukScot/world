@@ -101,6 +101,15 @@ describe("diarySchema", () => {
     const r = diarySchema.safeParse({ entryDate: "", entryTime: "10:00" });
     expect(r.success).toBe(false);
   });
+
+  test.each([
+    ["a day the month does not have", "2026-02-30", "10:00"],
+    ["a month past December", "2026-13-01", "10:00"],
+    ["an hour past 23", "2026-05-16", "24:00"],
+    ["a minute past 59", "2026-05-16", "10:60"],
+  ])("rejects %s", (_name, entryDate, entryTime) => {
+    expect(diarySchema.safeParse({ entryDate, entryTime }).success).toBe(false);
+  });
 });
 
 describe("painSchema", () => {

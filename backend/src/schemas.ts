@@ -38,9 +38,14 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8).max(72)
 });
 
+// A day and a time that exist: the shape alone lets 2026-13-45 and 99:99
+// through, and the log and the charts then have no date to place the entry on.
+const entryDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(isoDateRefine, { message: "Invalid calendar date" });
+const entryTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+
 export const diarySchema = z.object({
-  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  entryTime: z.string().regex(/^\d{2}:\d{2}$/),
+  entryDate,
+  entryTime,
   moodLevel: z.number().min(1).max(9).nullable().optional(),
   depressionLevel: z.number().min(1).max(9).nullable().optional(),
   anxietyLevel: z.number().min(1).max(9).nullable().optional(),
@@ -55,8 +60,8 @@ export const diarySchema = z.object({
 export const painValueSchema = z.union([z.string(), z.array(z.string())]).optional();
 
 export const painSchema = z.object({
-  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  entryTime: z.string().regex(/^\d{2}:\d{2}$/),
+  entryDate,
+  entryTime,
   painLevel: z.number().int().min(1).max(9).nullable().optional(),
   fatigueLevel: z.number().int().min(1).max(9).nullable().optional(),
   coffeeCount: z.number().int().min(0).max(50).nullable().optional(),
@@ -81,8 +86,8 @@ export const painSchema = z.object({
 });
 
 export const cbtSchema = z.object({
-  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  entryTime: z.string().regex(/^\d{2}:\d{2}$/),
+  entryDate,
+  entryTime,
   intensity: z.number().int().min(1).max(9).nullable().optional(),
   situation: z.string().max(5000).optional().default(""),
   thoughts: z.string().max(5000).optional().default(""),
@@ -96,8 +101,8 @@ export const cbtSchema = z.object({
 });
 
 export const dbtSchema = z.object({
-  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  entryTime: z.string().regex(/^\d{2}:\d{2}$/),
+  entryDate,
+  entryTime,
   intensity: z.number().int().min(1).max(9).nullable().optional(),
   emotionName: z.string().max(200).optional().default(""),
   allowAffirmation: z.string().max(5000).optional().default(""),
@@ -124,7 +129,7 @@ export const memorableDaySchema = z.object({
   description: z.string().max(1000).optional().default(""),
 });
 
-const BACKUP_MAX_ROWS = 50_000;
+export const BACKUP_MAX_ROWS = 50_000;
 
 export const backupImportSchema = z.object({
   diary: z

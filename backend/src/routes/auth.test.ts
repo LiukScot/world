@@ -479,4 +479,22 @@ describe("auth rate limit", () => {
     }
     expect((await login("WrongPassword!")).status).toBe(401);
   });
+
+  test("registrations count towards the cap even when they succeed", async () => {
+    const ctx = createTestDb();
+    const app = createTestApp(ctx, "/auth", authRoute);
+    const register = (n: number, ip: string) =>
+      app.request("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": ip },
+        body: JSON.stringify({ email: `new-${n}@example.com`, password: "Password123!" }),
+      });
+    for (let i = 0; i < 10; i++) {
+      expect((await register(i, "203.0.113.10")).status).toBe(201);
+    }
+    const blocked = await register(10, "203.0.113.10");
+    expect(blocked.status).toBe(429);
+    expect((await blocked.json()).error.code).toBe("RATE_LIMITED");
+    expect((await register(11, "203.0.113.11")).status).toBe(201);
+  });
 });

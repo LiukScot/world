@@ -16,17 +16,9 @@ export const TITLE_TYPE =
 // titles on one screen is one title too many.
 export const PAGE_TITLE = `${TITLE_TYPE} max-mobile:hidden`;
 
-export function EmptyState({
-  title,
-  description,
-  compact = false,
-}: {
-  title: string;
-  description: string;
-  compact?: boolean;
-}) {
+export function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <div className={compact ? "grid gap-2 m-0" : "grid gap-2 my-3"}>
+    <div className="grid gap-2 my-3">
       <p className="text-control font-semibold text-text m-0">{title}</p>
       <p className="max-w-[60ch] text-control text-muted leading-normal m-0">{description}</p>
     </div>

@@ -8,6 +8,7 @@ import { openDb, runMigrations } from "./db.ts";
 import { createDrizzle } from "./db/index.ts";
 import type { AppEnv } from "./app-env.ts";
 import { cleanupExpiredSessions } from "./middleware/auth.ts";
+import { defaultBodyLimit } from "./middleware/body-limit.ts";
 
 import auth from "./routes/auth.ts";
 import diary from "./routes/diary.ts";
@@ -69,6 +70,9 @@ app.use(
   })
 );
 
+// Global middleware: request body cap
+app.use("/api/*", defaultBodyLimit);
+
 // Global middleware: inject database into context
 app.use("/api/*", async (c, next) => {
   c.set("db", db);
@@ -122,7 +126,12 @@ const devFrontendProxyUrl = env.DEV_FRONTEND_PROXY_URL.trim();
 async function proxyDevFrontend(request: Request): Promise<Response> {
   try {
     const requestUrl = new URL(request.url);
-    const upstreamUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, `${devFrontendProxyUrl}/`);
+    // Assigned, not resolved: a path like //other.host/x resolved against the
+    // base would replace its host and send the request, cookies included,
+    // wherever the path says.
+    const upstreamUrl = new URL(devFrontendProxyUrl);
+    upstreamUrl.pathname = requestUrl.pathname;
+    upstreamUrl.search = requestUrl.search;
     const headers = new Headers(request.headers);
 
     headers.set("host", upstreamUrl.host);

@@ -47,6 +47,13 @@ export function usePrefs(enabled: boolean) {
   return { prefsQuery, prefsMutation, savePrefsPatch };
 }
 
+// The spreadsheet routes are called with fetch directly (a file, not JSON,
+// goes each way), so the error envelope apiFetch would unwrap is read here.
+async function responseErrorMessage(response: Response, fallback: string): Promise<string> {
+  const body = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+  return body?.error?.message ?? `${fallback} (HTTP ${response.status})`;
+}
+
 export function useSettings() {
   const queryClient = useQueryClient();
   const [purgeConfirmArmed, setPurgeConfirmArmed] = useState(false);
@@ -97,10 +104,7 @@ export function useSettings() {
 
   const doExportXlsx = async () => {
     const response = await fetch("/api/v1/backup/xlsx", { credentials: "include" });
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || "Spreadsheet export failed");
-    }
+    if (!response.ok) throw new Error(await responseErrorMessage(response, "Spreadsheet export failed"));
     const blob = await response.blob();
     const anchor = document.createElement("a");
     anchor.href = URL.createObjectURL(blob);
@@ -117,10 +121,7 @@ export function useSettings() {
       credentials: "include",
       body: form,
     });
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || "Spreadsheet import failed");
-    }
+    if (!response.ok) throw new Error(await responseErrorMessage(response, "Spreadsheet import failed"));
     await queryClient.invalidateQueries();
   };
 

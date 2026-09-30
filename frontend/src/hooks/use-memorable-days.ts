@@ -26,7 +26,6 @@ export function useMemorableDays(enabled: boolean) {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [selectedDate, setSelectedDate] = useState(todayKey());
 
   const today = todayKey();
   const memorableDaysQuery = useQuery({
@@ -76,8 +75,6 @@ export function useMemorableDays(enabled: boolean) {
     todayItems,
     isLoading: memorableDaysQuery.isLoading,
     visibleMonth,
-    selectedDate,
-    setSelectedDate,
     setVisibleMonth,
     createMemorableDay: (payload: MemorableDayPayload) => createMutation.mutateAsync(payload),
     updateMemorableDay: (id: number, payload: MemorableDayPayload) => updateMutation.mutateAsync({ id, payload }),
