@@ -1,20 +1,40 @@
 import type { Context } from "hono";
 import { getConnInfo } from "hono/bun";
 import { rateLimiter } from "hono-rate-limiter";
+import { env } from "../env.ts";
 
 const WINDOW_MS = 15 * 60 * 1000;
 const ATTEMPTS_PER_WINDOW = 10;
 
-// First hop of X-Forwarded-For when a proxy fronts the container, else the
-// socket peer. null only when there is no socket at all (in-process tests).
-function clientIp(c: Context): string | null {
-  const forwarded = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
-  if (forwarded) return forwarded;
-  try {
-    return getConnInfo(c).remote.address ?? null;
-  } catch {
-    return null;
+/**
+ * Picks the address that identifies the client. Each proxy appends the address
+ * it received the request from to X-Forwarded-For, so only the last
+ * `trustedHops` entries were written by our own proxies; anything further left
+ * came from the client and can be made up. With no trusted proxy, or fewer
+ * entries than proxies, the socket address is the only one nobody can forge.
+ */
+export function resolveClientIp(
+  forwardedFor: string | undefined,
+  socketAddress: string | null,
+  trustedHops: number,
+): string | null {
+  if (trustedHops > 0 && forwardedFor) {
+    const hops = forwardedFor.split(",").map((hop) => hop.trim());
+    const fromProxy = hops[hops.length - trustedHops];
+    if (fromProxy) return fromProxy;
   }
+  return socketAddress;
+}
+
+// null only when there is no usable address at all (in-process tests).
+function clientIp(c: Context): string | null {
+  let socketAddress: string | null = null;
+  try {
+    socketAddress = getConnInfo(c).remote.address ?? null;
+  } catch {
+    // No socket: the request did not come through Bun.serve.
+  }
+  return resolveClientIp(c.req.header("x-forwarded-for"), socketAddress, env.TRUSTED_PROXY_HOPS);
 }
 
 // In-memory, so the counter resets with the process and is per instance; that

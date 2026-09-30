@@ -11,7 +11,10 @@ export const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().default("http://localhost:5173,http://127.0.0.1:5173,http://localhost:5555,http://127.0.0.1:5555"),
   PUBLIC_DIR: z.string().default(path.resolve(process.cwd(), "../frontend/dist")),
   DEV_FRONTEND_PROXY_URL: z.string().default(""),
-  COOKIE_SECURE: z.string().default("true").transform(v => v.toLowerCase() === "true")
+  COOKIE_SECURE: z.string().default("true").transform(v => v.toLowerCase() === "true"),
+  // Reverse proxies in front of the app that append to X-Forwarded-For.
+  // 0 = none: the header is ignored and the socket address identifies the client.
+  TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).default(0)
 });
 
 export const env = envSchema.parse(process.env);

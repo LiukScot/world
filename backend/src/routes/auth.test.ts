@@ -1,7 +1,8 @@
-import { describe, expect, test, beforeEach } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test, beforeEach } from "bun:test";
 import { eq } from "drizzle-orm";
 import authRoute from "./auth.ts";
 import { users } from "../db/index.ts";
+import { env } from "../env.ts";
 import {
   createTestApp,
   createTestDb,
@@ -446,6 +447,32 @@ describe("POST /auth/change-password", () => {
 });
 
 describe("auth rate limit", () => {
+  // In-process requests have no socket, so the limiter only gets an address
+  // from X-Forwarded-For, which it reads when a proxy is declared.
+  const configuredHops = env.TRUSTED_PROXY_HOPS;
+  beforeAll(() => {
+    env.TRUSTED_PROXY_HOPS = 1;
+  });
+  afterAll(() => {
+    env.TRUSTED_PROXY_HOPS = configuredHops;
+  });
+
+  test("a made-up X-Forwarded-For entry does not reset the count", async () => {
+    const ctx = createTestDb();
+    const app = createTestApp(ctx, "/auth", authRoute);
+    // The proxy appends the real address after whatever the client sent.
+    const attempt = (spoofed: string) =>
+      app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": `${spoofed}, 203.0.113.20` },
+        body: JSON.stringify({ email: "nobody@example.com", password: "WrongPassword!" }),
+      });
+    for (let i = 0; i < 10; i++) {
+      expect((await attempt(`198.51.100.${i}`)).status).toBe(401);
+    }
+    expect((await attempt("198.51.100.99")).status).toBe(429);
+  });
+
   test("blocks the 11th attempt from one address within the window, others unaffected", async () => {
     const ctx = createTestDb();
     const app = createTestApp(ctx, "/auth", authRoute);
