@@ -23,6 +23,10 @@ services:
       # at startup instead of at first sign-in.
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS to the public URL}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      # Production sits behind one reverse proxy that terminates HTTPS. The
+      # rate limits need the count to find the real client address; see
+      # .env.example.
+      TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
     volumes:
       - ./data:/app/data
     restart: unless-stopped

@@ -22,9 +22,6 @@ export const DETAIL_ACTION_BTN =
   "px-2 py-1 text-xs font-medium text-muted bg-transparent border-0 rounded-[6px] shadow-none cursor-pointer font-[inherit] transition-[color,background] duration-150 ease-[ease] hover:text-text hover:bg-[color-mix(in_srgb,var(--text)_8%,transparent)]";
 export const DELETE_CONFIRM = "text-danger-strong bg-danger-strong/18 font-extrabold";
 
-export const DATETIME_FIELD =
-  "!w-auto max-w-full justify-self-start cursor-pointer tabular-nums [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:ml-2 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100";
-
 // No outer margin: every caller was passing mt-0 to undo one, which is the
 // tell that the constant owned spacing it had no business owning.
 export function EntriesHeading({ children, className = "" }: { children: ReactNode; className?: string }) {

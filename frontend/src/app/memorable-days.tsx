@@ -90,13 +90,9 @@ export function MemorableDaysSection({ memorable }: Props) {
 
   const closeDraft = useCallback(() => setDraft(null), []);
 
-  const openCreate = (date: string) => {
-    memorable.setSelectedDate(date);
-    setDraft(emptyDraft(date));
-  };
+  const openCreate = (date: string) => setDraft(emptyDraft(date));
 
   const openEdit = (item: MemorableDay) => {
-    memorable.setSelectedDate(item.date);
     memorable.setVisibleMonth(new Date(`${item.date}T00:00:00`));
     setDraft({
       id: item.id,
@@ -125,11 +121,20 @@ export function MemorableDaysSection({ memorable }: Props) {
     closeDraft();
   }, [memorable, closeDraft]);
 
+  /*
+   * The modal calls this from an effect keyed on the callback, and `memorable`
+   * is a new object every render. A callback that depends on it, or that
+   * stores a new Date for a month already shown, re-runs that effect on every
+   * render: the page re-renders for as long as the modal is open. Hence the
+   * stable setter alone, and the same state object for the same month.
+   */
+  const { setVisibleMonth } = memorable;
   const handleDraftDateChange = useCallback((date: string) => {
     const [year, month] = date.split("-").map(Number);
     if (!year || !month) return;
-    memorable.setVisibleMonth(new Date(year, month - 1, 1));
-  }, [memorable]);
+    setVisibleMonth((current) =>
+      current.getFullYear() === year && current.getMonth() === month - 1 ? current : new Date(year, month - 1, 1));
+  }, [setVisibleMonth]);
 
   const onListItemWheel = (event: React.WheelEvent<HTMLButtonElement>) => {
     const list = event.currentTarget.closest(".memorable-list");
@@ -187,7 +192,6 @@ export function MemorableDaysSection({ memorable }: Props) {
                   className={`${MEMO_DAY_CELL}${monthMatch ? "" : " opacity-[0.48]"}${isToday ? " shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_28%,transparent)]" : ""}${isSuccess ? " shadow-[0_0_0_2px_var(--success)]" : ""}`}
                   onClick={(event) => {
                     if ((event.target as Element).closest("button")) return;
-                    memorable.setSelectedDate(dayKey);
                     if (items.length > 0) setPopoverDateKey(popoverDateKey === dayKey ? null : dayKey);
                     else openCreate(dayKey);
                   }}
@@ -198,7 +202,6 @@ export function MemorableDaysSection({ memorable }: Props) {
                       className={DAY_NUMBER}
                       aria-label={items.length > 0 ? `View events on ${dayKey}` : `${day.getDate()}`}
                       onClick={() => {
-                        memorable.setSelectedDate(dayKey);
                         if (items.length > 0) setPopoverDateKey(popoverDateKey === dayKey ? null : dayKey);
                       }}
                     >

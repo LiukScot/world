@@ -266,6 +266,30 @@ describe("POST /backup/xlsx/import", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  // Unguarded, the first throws on the magic-byte read and the second inside
+  // ExcelJS, and either surfaces as a 500.
+  test.each([
+    ["shorter than the magic bytes", new Uint8Array([0x50, 0x4b])],
+    ["a zip header followed by garbage", new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3, 4, 5, 6, 7, 8])],
+  ])("rejects an upload that is %s with 400", async (_name, bytes) => {
+    const { app, cookie } = await setup();
+    const form = new FormData();
+    form.append("file", new File([bytes], "broken.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }));
+    const res = await app.request("/backup/xlsx/import", { method: "POST", headers: { cookie }, body: form });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.code).toBe("INVALID_FILE_TYPE");
+
+    const base64 = await app.request("/backup/xlsx/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify({ base64: Buffer.from(bytes).toString("base64") }),
+    });
+    expect(base64.status).toBe(400);
+    expect((await base64.json()).error.code).toBe("INVALID_FILE_TYPE");
+  });
 });
 
 describe("backup data isolation (IDOR)", () => {

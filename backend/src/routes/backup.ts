@@ -16,7 +16,7 @@ import {
   rowPainField,
   mergeOptions,
 } from "../helpers.ts";
-import { backupImportSchema, DEFAULT_MODEL } from "../schemas.ts";
+import { backupImportSchema, BACKUP_MAX_ROWS, DEFAULT_MODEL } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
 import { sheetToObjects } from "../xlsx-helpers.ts";
 import { loadPainOptionsForUser, loadPreselectedMedicines } from "./pain.ts";
@@ -289,6 +289,31 @@ const XLSX_MIME_TYPES = new Set([
   "application/vnd.ms-excel",
 ]);
 
+const INVALID_XLSX = {
+  error: { code: "INVALID_FILE_TYPE", message: "File does not appear to be a valid XLSX file" },
+} as const;
+
+/**
+ * Loads the upload into the workbook; false when it is not a readable XLSX.
+ * The ZIP magic bytes (PK\x03\x04) are checked first because neither the
+ * client-reported MIME nor a base64 payload says what the bytes are, and a
+ * file that passes can still be a broken archive, which ExcelJS reports by
+ * throwing.
+ */
+async function loadXlsx(workbook: ExcelJS.Workbook, bytes: ArrayBuffer): Promise<boolean> {
+  const magic = new Uint8Array(bytes.slice(0, 4));
+  if (magic.length < 4 || magic[0] !== 0x50 || magic[1] !== 0x4b || magic[2] !== 0x03 || magic[3] !== 0x04) {
+    return false;
+  }
+  try {
+    await workbook.xlsx.load(bytes);
+  } catch (e) {
+    console.error("XLSX import parse failed:", e);
+    return false;
+  }
+  return true;
+}
+
 backup.post("/xlsx/import", limitUploadSize, async (c) => {
   const rawDb = c.get("rawDb");
   const userId = c.get("userId");
@@ -321,13 +346,9 @@ backup.post("/xlsx/import", limitUploadSize, async (c) => {
         413
       );
     }
-    const arrayBuffer = await file.arrayBuffer();
-    // Verify ZIP magic bytes (PK\x03\x04) — client-reported MIME is not trustworthy
-    const magic = new Uint8Array(arrayBuffer, 0, 4);
-    if (magic[0] !== 0x50 || magic[1] !== 0x4b || magic[2] !== 0x03 || magic[3] !== 0x04) {
-      return c.json({ error: { code: "INVALID_FILE_TYPE", message: "File does not appear to be a valid XLSX file" } }, 400);
+    if (!(await loadXlsx(workbook, await file.arrayBuffer()))) {
+      return c.json(INVALID_XLSX, 400);
     }
-    await workbook.xlsx.load(arrayBuffer);
   } else {
     const payload = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!payload?.base64 || typeof payload.base64 !== "string") {
@@ -346,15 +367,18 @@ backup.post("/xlsx/import", limitUploadSize, async (c) => {
         413
       );
     }
-    // Verify ZIP magic bytes (PK\x03\x04) — base64 payload can contain arbitrary bytes
-    if (decoded[0] !== 0x50 || decoded[1] !== 0x4b || decoded[2] !== 0x03 || decoded[3] !== 0x04) {
-      return c.json({ error: { code: "INVALID_FILE_TYPE", message: "File does not appear to be a valid XLSX file" } }, 400);
+    if (!(await loadXlsx(workbook, decoded.buffer.slice(decoded.byteOffset, decoded.byteOffset + decoded.byteLength)))) {
+      return c.json(INVALID_XLSX, 400);
     }
-    await workbook.xlsx.load(decoded.buffer.slice(decoded.byteOffset, decoded.byteOffset + decoded.byteLength));
   }
 
   const diaryRows = sheetToObjects(workbook.getWorksheet("diary"));
   const painRows = sheetToObjects(workbook.getWorksheet("pain"));
+  // Same row cap the JSON import enforces through its schema: a 10 MB
+  // spreadsheet compresses far more rows than that into one transaction.
+  if (diaryRows.length > BACKUP_MAX_ROWS || painRows.length > BACKUP_MAX_ROWS) {
+    return c.json({ error: { code: "FILE_TOO_LARGE", message: "Import exceeds row limit (50 000 per sheet)" } }, 413);
+  }
 
   const tx = rawDb.transaction(() => {
     rawDb.query(`DELETE FROM pain_entries WHERE user_id = ?`).run(userId);
