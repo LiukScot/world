@@ -212,7 +212,9 @@ export function StageRail({
 }) {
   return (
     <nav className="grid gap-page content-start min-w-0 wide:sticky wide:top-0 wide:max-h-[calc(100dvh-80px)] wide:overflow-y-auto" aria-label="Stages">
-      {heading}
+      {/* Both parts of the heading are hidden on mobile; an empty grid item
+          would still take a row gap. */}
+      {heading ? <div className="max-mobile:hidden">{heading}</div> : null}
       <ol className="grid gap-1 m-0 p-0 list-none max-wide:hidden">
         {steps.map((step, index) => (
           <li key={step.title} className={`${RAIL_STEP} ${step.done ? "text-text" : "text-muted"}`}>

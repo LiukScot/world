@@ -1,11 +1,3 @@
-<!-- ─────────────────────────────────────────────────────────────────── -->
-<!--  ✍️ PERSONAL — repo-specific rules. Edit freely; sync never touches this. -->
-<!-- ─────────────────────────────────────────────────────────────────── -->
-
-<!-- @@DOTFILES-SYNC@@ ──────────────────────────────────────────────────────── -->
-<!--  🔒 SYNCED — managed by dotfiles. Do NOT edit below; it gets overwritten. -->
-<!-- ─────────────────────────────────────────────────────────────────── -->
-
 # Agent instructions
 
 These rules apply to every code change in this repository. Apply
@@ -26,6 +18,10 @@ flagged or rejected with a reference to the rule it breaks.
   problem and copy its structure, naming, and patterns.
 - Match the prefix conventions of nearby code. If components are
   named `dash-*`, do not introduce `widget-*`.
+- Before changing files for a platform, read that platform's roadmap,
+  architecture, build, and validation documentation under `docs/`.
+  Resolve any documented decision gate before implementing one of its
+  alternatives.
 
 ## 1. Style and design system
 
@@ -39,6 +35,9 @@ flagged or rejected with a reference to the rule it breaks.
   a selector only because its current visual output looks similar.
 - When the project supports dark mode, new colors must adapt to every
   supported theme. Prefer semantic tokens over raw color literals.
+- When new items arrive on a screen, including through "Load more", do
+  not move the items already shown and do not insert items before the
+  user's current position.
 
 ## 2. Code organization
 
@@ -243,6 +242,9 @@ flagged or rejected with a reference to the rule it breaks.
 - Every new test must run in CI. When repository settings permit it,
   add new correctness-gating jobs to the default branch's required
   status checks as part of the same change.
+- Share the link to an iOS IPA as soon as its build and artifact upload
+  job succeeds. Do not wait for unrelated PR checks. Keep monitoring the
+  other checks and do not call the PR ready before they pass.
 
 ## 14. Accessibility (frontend)
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiEnvelopeSchema, apiFetch, getErrorMessage } from "../lib";
+import { apiRequest } from "../transport";
 import {
   BACKUP_JSON_EXPORT_OK,
   BACKUP_JSON_IMPORT_OK,
@@ -103,7 +104,7 @@ export function useSettings() {
   };
 
   const doExportXlsx = async () => {
-    const response = await fetch("/api/v1/backup/xlsx", { credentials: "include" });
+    const response = await apiRequest("/api/v1/backup/xlsx", { credentials: "include" });
     if (!response.ok) throw new Error(await responseErrorMessage(response, "Spreadsheet export failed"));
     const blob = await response.blob();
     const anchor = document.createElement("a");
@@ -116,7 +117,7 @@ export function useSettings() {
   const doImportXlsx = async (file: File) => {
     const form = new FormData();
     form.append("file", file);
-    const response = await fetch("/api/v1/backup/xlsx/import", {
+    const response = await apiRequest("/api/v1/backup/xlsx/import", {
       method: "POST",
       credentials: "include",
       body: form,

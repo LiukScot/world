@@ -262,7 +262,7 @@ export function MemorableDaysSection({ memorable }: Props) {
 
       <button
         type="button"
-        className="mobile:hidden fixed bottom-6 right-6 z-20 w-14 h-14 flex items-center justify-center rounded-full border-0 cursor-pointer bg-accent text-accent-fg text-2xl leading-none shadow-[var(--shadow)] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--ring)]"
+        className="mobile:hidden fixed bottom-[calc(24px+env(safe-area-inset-bottom))] right-6 z-20 w-14 h-14 flex items-center justify-center rounded-full border-0 cursor-pointer bg-accent text-accent-fg text-2xl leading-none shadow-[var(--shadow)] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--ring)]"
         aria-label="Add memorable day"
         onClick={() => openCreate(toDateKey(new Date()))}
       >

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { openDb, runMigrations } from "./db.ts";
+import { runMigrations } from "./db.ts";
+import { openDb } from "./open-db.ts";
 
 const args = new Set(process.argv.slice(2));
 const fresh = args.has("--fresh");
