@@ -8,8 +8,8 @@ import { runMigrations } from "../db.ts";
  * removed from it ever reaches an existing install. These pin the ALTER
  * TABLEs that do: intensity added, helpful_reasoning dropped.
  *
- * The FTS index is the sharp edge. It covers helpful_reasoning, and its
- * triggers fire on every write to cbt_entries — leave them pointing at a
+ * The legacy FTS index is the sharp edge. It covers helpful_reasoning, and
+ * its triggers fire on every write to cbt_entries — leave them pointing at a
  * dropped column and the next insert fails, so a test that only checks
  * PRAGMA table_info would pass against a table nobody can write to.
  */
@@ -151,7 +151,7 @@ describe("dropping cbt helpful_reasoning", () => {
     expect(row.situation).toBe("written before the scale existed");
   });
 
-  test("rebuilds the FTS index so writes still work", () => {
+  test("leaves the table writable", () => {
     const db = dbWithLegacyTherapyTables();
     runMigrations(db);
 
@@ -160,24 +160,16 @@ describe("dropping cbt helpful_reasoning", () => {
         .query(`INSERT INTO cbt_entries (user_id, entry_date, entry_time, situation) VALUES (1, '2026-03-01', '08:00', 'after the drop')`)
         .run(),
     ).not.toThrow();
-    const hit = db.query(`SELECT rowid FROM cbt_fts WHERE cbt_fts MATCH 'drop'`).all();
-    expect(hit.length).toBe(1);
   });
 
-  /*
-   * Dropping the column means dropping and recreating the index that covers
-   * it, which empties it. Rows written before the migration have no trigger
-   * left to re-add them, so if the rebuild does not run they are silently
-   * unsearchable — and `SELECT count(*)` cannot catch that: on an
-   * external-content index it answers with the source table's row count, so
-   * it reads as full either way.
-   */
-  test("leaves rows written before the migration searchable", () => {
+  test("removes the full-text indexes and their triggers", () => {
     const db = dbWithLegacyTherapyTables();
     runMigrations(db);
 
-    const hit = db.query(`SELECT rowid FROM cbt_fts WHERE cbt_fts MATCH 'existed'`).all();
-    expect(hit.length).toBe(1);
+    const left = db
+      .query(`SELECT name FROM sqlite_master WHERE name LIKE '%\\_fts%' ESCAPE '\\'`)
+      .all();
+    expect(left).toEqual([]);
   });
 
   test("clears the metric_types row that pointed at it", () => {
