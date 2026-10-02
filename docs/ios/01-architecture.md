@@ -111,10 +111,16 @@ unchanged.
 
 ### FTS5
 
-`schema.ts` creates FTS5 tables and `backfillFtsTables` rebuilds them
-on every migration run. The default sql.js build may not include
-FTS5. This is spike 3 in the roadmap; the fallback is a custom sql.js
-build or the official SQLite WASM in-memory build.
+The default sql.js build does not include FTS5, SQLite's full-text
+search module. The schema no longer needs it: the four full-text
+indexes were unused and are dropped by the migration at schema
+version 19.
+
+One limit remains. A database file created before version 19 still
+contains the indexes, and SQLite cannot drop an FTS5 table without the
+FTS5 module. sql.js therefore cannot open a server `world.sqlite`
+directly. Data moves to the app through the JSON export, described
+below.
 
 ## Authentication
 

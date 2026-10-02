@@ -7,19 +7,25 @@ one person part-time and are rough.
 
 Throwaway code. Each answers one question the design depends on.
 
-- [ ] **Signer.** Build an unsigned IPA of an empty Capacitor app in
+- [x] **Signer.** Build an unsigned IPA of an empty Capacitor app in
       CI, sign it with the chosen signer, install it.
-      Check: the app opens on the phone.
+      Check: the app opens on the phone. Passed. The page title sat
+      under the status bar, which confirms the safe-area work in
+      phase 3.
 - [x] **Linux project generation.** Run `npx cap add ios` and
       `npx cap sync ios` on Linux, then build that `ios/` in CI.
       Check: the archive step succeeds. Passed with Capacitor 8.5.2.
-- [ ] **sql.js and the schema.** Run `runMigrations` against sql.js.
-      Check: it completes, FTS5 tables included.
+- [x] **sql.js and the schema.** Run the schema statements against
+      sql.js. Check: they all complete. Passed with sql.js on SQLite
+      3.49.1, after the unused FTS5 indexes were removed from the
+      schema.
 - [ ] **File persistence.** Export the sql.js database, write it with
       the Filesystem plugin, kill the app, reopen.
       Check: the data is still there.
 - [ ] **Database size.** Read the size of the server's `world.sqlite`.
-      Check: a full write takes under ~100 ms on the phone.
+      Check: a full write takes under ~100 ms on the phone. A 213 KB
+      development database exports from sql.js in 1 ms on a desktop;
+      the server file and the phone are not measured yet.
 
 A failed spike changes the design before any real code is written.
 
