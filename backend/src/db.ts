@@ -98,20 +98,24 @@ function ensureTherapyIntensityColumns(db: SQLiteDB): void {
 }
 
 /*
- * The "helpful reasoning" prompt was dropped from the CBT worksheet, so its
- * column goes with it. Runs *before* the create statements: the FTS index
- * covers that column, and `CREATE ... IF NOT EXISTS` will not reshape an
- * index that already exists. Dropping it here lets the create statements
- * rebuild it without the column, and backfillFtsTables refills it.
+ * The full-text indexes were built for a search feature that was removed, and
+ * nothing queries them. Runs first: their triggers name the columns of the
+ * entry tables, so a column cannot be dropped while they exist.
  */
+function dropFtsIndexes(db: SQLiteDB): void {
+  for (const table of ["diary", "cbt", "dbt", "pain"]) {
+    for (const suffix of ["ai", "ad", "au"]) {
+      db.exec(`DROP TRIGGER IF EXISTS ${table}_fts_${suffix}`);
+    }
+    db.exec(`DROP TABLE IF EXISTS ${table}_fts`);
+  }
+}
+
+// The "helpful reasoning" prompt was removed from the CBT worksheet.
 function dropCbtHelpfulReasoning(db: SQLiteDB): void {
   if (!columnExists(db, "cbt_entries", "helpful_reasoning")) {
     return;
   }
-  for (const trigger of ["cbt_fts_ai", "cbt_fts_ad", "cbt_fts_au"]) {
-    db.exec(`DROP TRIGGER IF EXISTS ${trigger}`);
-  }
-  db.exec(`DROP TABLE IF EXISTS cbt_fts`);
   db.exec(`ALTER TABLE cbt_entries DROP COLUMN helpful_reasoning`);
   // metric_types enumerates the fields a custom page can pull in, so a row
   // pointing at a dropped column would offer a field that cannot be read.
@@ -156,31 +160,6 @@ function dropLegacyPainTables(db: SQLiteDB): void {
   db.exec("DROP TABLE IF EXISTS pain_tag_catalog");
 }
 
-/*
- * Repopulates the FTS5 indexes from their source tables.
- *
- * These are external-content indexes, so `SELECT count(*) FROM cbt_fts`
- * reads through to cbt_entries and answers with the number of *entries* —
- * never the number of indexed rows. The old guard asked exactly that
- * question and so skipped the backfill on precisely the databases that
- * needed one: any with rows already in them.
- *
- * FTS5's own 'rebuild' is the operation this was hand-rolling. It reads the
- * content table the index is declared against, so it cannot drift from the
- * schema the way a written-out column list can — which is what made the
- * dropped helpful_reasoning column a problem here in the first place.
- *
- * ponytail: unconditional, so it re-indexes on every migration run rather
- * than detecting staleness. Reading the index's own row count means querying
- * cbt_fts_docsize, an FTS5 internal. At this size the rebuild is
- * milliseconds; revisit if these tables ever get large.
- */
-function backfillFtsTables(db: SQLiteDB): void {
-  for (const ftsTable of ["diary_fts", "cbt_fts", "dbt_fts", "pain_fts"]) {
-    db.exec(`INSERT INTO ${ftsTable}(${ftsTable}) VALUES('rebuild')`);
-  }
-}
-
 export function openDb(dbPath: string, journalMode = "WAL"): SQLiteDB {
   const db = new Database(dbPath);
   const normalizedJournalMode = journalMode.trim().toUpperCase();
@@ -194,6 +173,7 @@ export function openDb(dbPath: string, journalMode = "WAL"): SQLiteDB {
 
 export function runMigrations(db: SQLiteDB): void {
   const tx = db.transaction(() => {
+    dropFtsIndexes(db);
     dropCbtHelpfulReasoning(db);
 
     for (const stmt of migrationStatements) {
@@ -209,7 +189,6 @@ export function runMigrations(db: SQLiteDB): void {
     backfillPainColumnsFromLegacyTags(db);
     dropLegacyPainTables(db);
     dropRemovedColumns(db);
-    backfillFtsTables(db);
 
     db.query(
       `INSERT INTO app_meta(key, value) VALUES('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`

@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 18;
+export const SCHEMA_VERSION = 19;
 
 export const METRIC_KINDS = ["scale", "counter", "tags", "text", "measure"] as const;
 export type MetricKind = (typeof METRIC_KINDS)[number];
@@ -320,110 +320,6 @@ export const migrationStatements: string[] = [
   // reissuing them is cheaper than keeping dead hashes around.
   `DROP INDEX IF EXISTS idx_mcp_tokens_user`,
   `DROP TABLE IF EXISTS mcp_tokens`,
-
-  // ── FTS5: diary_fts ────────────────────────────────────────────────────
-  `CREATE VIRTUAL TABLE IF NOT EXISTS diary_fts USING fts5(
-    description,
-    reflection,
-    content='diary_entries',
-    content_rowid='id',
-    tokenize='unicode61 remove_diacritics 2'
-  )`,
-  `CREATE TRIGGER IF NOT EXISTS diary_fts_ai AFTER INSERT ON diary_entries BEGIN
-    INSERT INTO diary_fts(rowid, description, reflection)
-    VALUES (new.id, COALESCE(new.description, ''), COALESCE(new.reflection, ''));
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS diary_fts_ad AFTER DELETE ON diary_entries BEGIN
-    INSERT INTO diary_fts(diary_fts, rowid, description, reflection)
-    VALUES ('delete', old.id, COALESCE(old.description, ''), COALESCE(old.reflection, ''));
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS diary_fts_au AFTER UPDATE ON diary_entries BEGIN
-    INSERT INTO diary_fts(diary_fts, rowid, description, reflection)
-    VALUES ('delete', old.id, COALESCE(old.description, ''), COALESCE(old.reflection, ''));
-    INSERT INTO diary_fts(rowid, description, reflection)
-    VALUES (new.id, COALESCE(new.description, ''), COALESCE(new.reflection, ''));
-  END`,
-
-  // ── FTS5: cbt_fts ──────────────────────────────────────────────────────
-  `CREATE VIRTUAL TABLE IF NOT EXISTS cbt_fts USING fts5(
-    situation,
-    thoughts,
-    main_unhelpful_thought,
-    effect_of_believing,
-    evidence_for_against,
-    alternative_explanation,
-    worst_best_scenario,
-    friend_advice,
-    productive_response,
-    content='cbt_entries',
-    content_rowid='id',
-    tokenize='unicode61 remove_diacritics 2'
-  )`,
-  `CREATE TRIGGER IF NOT EXISTS cbt_fts_ai AFTER INSERT ON cbt_entries BEGIN
-    INSERT INTO cbt_fts(rowid, situation, thoughts, main_unhelpful_thought, effect_of_believing, evidence_for_against, alternative_explanation, worst_best_scenario, friend_advice, productive_response)
-    VALUES (new.id, new.situation, new.thoughts, new.main_unhelpful_thought, new.effect_of_believing, new.evidence_for_against, new.alternative_explanation, new.worst_best_scenario, new.friend_advice, new.productive_response);
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS cbt_fts_ad AFTER DELETE ON cbt_entries BEGIN
-    INSERT INTO cbt_fts(cbt_fts, rowid, situation, thoughts, main_unhelpful_thought, effect_of_believing, evidence_for_against, alternative_explanation, worst_best_scenario, friend_advice, productive_response)
-    VALUES ('delete', old.id, old.situation, old.thoughts, old.main_unhelpful_thought, old.effect_of_believing, old.evidence_for_against, old.alternative_explanation, old.worst_best_scenario, old.friend_advice, old.productive_response);
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS cbt_fts_au AFTER UPDATE ON cbt_entries BEGIN
-    INSERT INTO cbt_fts(cbt_fts, rowid, situation, thoughts, main_unhelpful_thought, effect_of_believing, evidence_for_against, alternative_explanation, worst_best_scenario, friend_advice, productive_response)
-    VALUES ('delete', old.id, old.situation, old.thoughts, old.main_unhelpful_thought, old.effect_of_believing, old.evidence_for_against, old.alternative_explanation, old.worst_best_scenario, old.friend_advice, old.productive_response);
-    INSERT INTO cbt_fts(rowid, situation, thoughts, main_unhelpful_thought, effect_of_believing, evidence_for_against, alternative_explanation, worst_best_scenario, friend_advice, productive_response)
-    VALUES (new.id, new.situation, new.thoughts, new.main_unhelpful_thought, new.effect_of_believing, new.evidence_for_against, new.alternative_explanation, new.worst_best_scenario, new.friend_advice, new.productive_response);
-  END`,
-
-  // ── FTS5: dbt_fts ──────────────────────────────────────────────────────
-  `CREATE VIRTUAL TABLE IF NOT EXISTS dbt_fts USING fts5(
-    emotion_name,
-    allow_affirmation,
-    watch_emotion,
-    body_location,
-    body_feeling,
-    present_moment,
-    emotion_returns,
-    content='dbt_entries',
-    content_rowid='id',
-    tokenize='unicode61 remove_diacritics 2'
-  )`,
-  `CREATE TRIGGER IF NOT EXISTS dbt_fts_ai AFTER INSERT ON dbt_entries BEGIN
-    INSERT INTO dbt_fts(rowid, emotion_name, allow_affirmation, watch_emotion, body_location, body_feeling, present_moment, emotion_returns)
-    VALUES (new.id, new.emotion_name, new.allow_affirmation, new.watch_emotion, new.body_location, new.body_feeling, new.present_moment, new.emotion_returns);
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS dbt_fts_ad AFTER DELETE ON dbt_entries BEGIN
-    INSERT INTO dbt_fts(dbt_fts, rowid, emotion_name, allow_affirmation, watch_emotion, body_location, body_feeling, present_moment, emotion_returns)
-    VALUES ('delete', old.id, old.emotion_name, old.allow_affirmation, old.watch_emotion, old.body_location, old.body_feeling, old.present_moment, old.emotion_returns);
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS dbt_fts_au AFTER UPDATE ON dbt_entries BEGIN
-    INSERT INTO dbt_fts(dbt_fts, rowid, emotion_name, allow_affirmation, watch_emotion, body_location, body_feeling, present_moment, emotion_returns)
-    VALUES ('delete', old.id, old.emotion_name, old.allow_affirmation, old.watch_emotion, old.body_location, old.body_feeling, old.present_moment, old.emotion_returns);
-    INSERT INTO dbt_fts(rowid, emotion_name, allow_affirmation, watch_emotion, body_location, body_feeling, present_moment, emotion_returns)
-    VALUES (new.id, new.emotion_name, new.allow_affirmation, new.watch_emotion, new.body_location, new.body_feeling, new.present_moment, new.emotion_returns);
-  END`,
-
-  // ── FTS5: pain_fts ─────────────────────────────────────────────────────
-  `CREATE VIRTUAL TABLE IF NOT EXISTS pain_fts USING fts5(
-    note,
-    symptoms,
-    content='pain_entries',
-    content_rowid='id',
-    tokenize='unicode61 remove_diacritics 2'
-  )`,
-  `CREATE TRIGGER IF NOT EXISTS pain_fts_ai AFTER INSERT ON pain_entries BEGIN
-    INSERT INTO pain_fts(rowid, note, symptoms)
-    VALUES (new.id, COALESCE(new.note, ''), COALESCE(new.symptoms, ''));
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS pain_fts_ad AFTER DELETE ON pain_entries BEGIN
-    INSERT INTO pain_fts(pain_fts, rowid, note, symptoms)
-    VALUES ('delete', old.id, COALESCE(old.note, ''), COALESCE(old.symptoms, ''));
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS pain_fts_au AFTER UPDATE ON pain_entries BEGIN
-    INSERT INTO pain_fts(pain_fts, rowid, note, symptoms)
-    VALUES ('delete', old.id, COALESCE(old.note, ''), COALESCE(old.symptoms, ''));
-    INSERT INTO pain_fts(rowid, note, symptoms)
-    VALUES (new.id, COALESCE(new.note, ''), COALESCE(new.symptoms, ''));
-  END`,
 
   // ── metric_types: modular value-type definitions (built-in + custom) ────
   `CREATE TABLE IF NOT EXISTS metric_types (
