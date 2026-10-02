@@ -1,0 +1,62 @@
+name: iOS signer spike
+
+# Builds the empty Capacitor app in spikes/ios-signer as an unsigned IPA.
+# Signing happens outside CI, so no certificate is stored here.
+on:
+  push:
+    branches: [spike/ios-signer]
+    paths:
+      - "spikes/ios-signer/**"
+      - ".github/workflows/ios-spike.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-spike-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Unsigned IPA
+    runs-on: macos-26
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: spikes/ios-signer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Copies www/ and the Capacitor config into ios/; both are gitignored.
+      - name: Sync web assets
+        run: npx cap sync ios
+
+      - name: Archive without signing
+        run: |
+          xcodebuild archive \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+
+      - name: Package IPA
+        run: |
+          mkdir Payload
+          cp -R build/App.xcarchive/Products/Applications/App.app Payload/
+          zip -qr World-spike-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: World-spike-unsigned
+          path: spikes/ios-signer/World-spike-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
