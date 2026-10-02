@@ -359,13 +359,13 @@ function App() {
           much, leaving content sliding through the gap above it. */}
       <main
         ref={mainRef}
-        className={`max-w-[1500px] w-full overflow-y-auto overscroll-contain [padding:clamp(20px,4vw,40px)] max-mobile:px-5 max-mobile:pb-5 max-mobile:pt-0 ${mobileSidebarOpen ? "max-mobile:overflow-hidden" : ""}`}
+        className={`max-w-[1500px] w-full overflow-y-auto overscroll-contain [padding:clamp(20px,4vw,40px)] max-mobile:px-5 max-mobile:pb-[calc(20px+env(safe-area-inset-bottom))] max-mobile:pt-0 max-mobile:[scrollbar-width:none] max-mobile:[&::-webkit-scrollbar]:hidden ${mobileSidebarOpen ? "max-mobile:overflow-hidden" : ""}`}
       >
         {/* Mobile head. Sticky, because the menu used to scroll away with
             the page: reaching the nav from the bottom of a long entry
             form meant scrolling back to the top. It bleeds past main's
             padding so the blurred strip reaches both edges. */}
-        <header className="hidden max-mobile:grid gap-2 sticky top-0 z-10 -mx-5 mb-5 px-5 py-3 bg-[color-mix(in_srgb,var(--bg)_92%,transparent)] backdrop-blur-md border-b border-[color-mix(in_srgb,var(--border)_40%,transparent)]">
+        <header className="hidden max-mobile:grid gap-2 sticky top-0 z-10 -mx-5 mb-5 px-5 pb-3 pt-[calc(12px+env(safe-area-inset-top))] bg-[color-mix(in_srgb,var(--bg)_92%,transparent)] backdrop-blur-md border-b border-[color-mix(in_srgb,var(--border)_40%,transparent)]">
           <div className="flex items-center gap-3">
             <button
               type="button"
