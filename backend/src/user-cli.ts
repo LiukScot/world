@@ -1,5 +1,6 @@
 import path from "node:path";
-import { openDb, runMigrations } from "./db.ts";
+import { runMigrations } from "./db.ts";
+import { openDb } from "./open-db.ts";
 import { changePasswordSchema, registerSchema } from "./schemas.ts";
 
 const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), "../data/world.sqlite");

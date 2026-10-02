@@ -60,8 +60,17 @@ export function cleanupExpiredSessions(rawDb: SQLiteDB): void {
 /**
  * Middleware that requires authentication.
  * Sets userId and userEmail on the context for use in route handlers.
+ *
+ * A user already on the context is trusted: only server-side code can put one
+ * there. The device build does, having one local user and no cookies; the
+ * server never does, so there the session cookie is always checked.
  */
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
+  if (c.get("userId") !== undefined) {
+    await next();
+    return;
+  }
+
   const db = c.get("db");
   const session = getSession(db, c.req.raw);
   if (!session) {

@@ -96,10 +96,11 @@ request only after the write finishes.
 The file is written whole. `Library/` is included in device backups
 and is not subject to WebKit storage eviction, unlike IndexedDB.
 
-Known ceiling: write cost grows with database size. The server
-database is the reference; measure it before phase 2. If it reaches
-tens of megabytes, move to the native plugin and accept the async
-rewrite.
+Known ceiling: write cost grows with database size. Measured on the
+phone, a full write takes roughly 17–20 ms per megabyte: 120 ms at
+5.9 MB, 200 ms at 11.7 MB. The development database is 0.2 MB. Past
+about 5 MB each save becomes noticeable; at that point move to the
+native plugin and accept the async rewrite.
 
 ### Raw SQLite calls
 

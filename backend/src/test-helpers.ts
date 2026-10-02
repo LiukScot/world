@@ -1,7 +1,8 @@
 import { Database } from "bun:sqlite";
 import { Hono } from "hono";
 import { sql } from "drizzle-orm";
-import { createDrizzle, users, sessions, type DrizzleDB } from "./db/index.ts";
+import { users, sessions, type DrizzleDB } from "./db/index.ts";
+import { createDrizzle } from "./open-db.ts";
 import { runMigrations, type SQLiteDB } from "./db.ts";
 import type { AppEnv } from "./app-env.ts";
 

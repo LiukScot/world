@@ -3,6 +3,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiEnvelopeSchema, apiFetch, getErrorMessage } from "../lib";
+import { apiRequest } from "../transport";
 import {
   stylesMapSchema,
   transactionListSchema,
@@ -149,7 +150,7 @@ export function useMoneySettings(enabled: boolean) {
   };
 
   const exportXlsx = async (signal: AbortSignal) => {
-    const response = await fetch("/api/v1/money/backup/xlsx", { credentials: "include", signal });
+    const response = await apiRequest("/api/v1/money/backup/xlsx", { credentials: "include", signal });
     if (!response.ok) throw new Error(`Export failed (HTTP ${response.status})`);
     downloadBlob(await response.blob(), datedName("xlsx"));
   };
@@ -157,7 +158,7 @@ export function useMoneySettings(enabled: boolean) {
   const importXlsx = async (file: File, signal: AbortSignal) => {
     const form = new FormData();
     form.append("file", file);
-    const response = await fetch("/api/v1/money/backup/xlsx/import", {
+    const response = await apiRequest("/api/v1/money/backup/xlsx/import", {
       method: "POST",
       credentials: "include",
       body: form,

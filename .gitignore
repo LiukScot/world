@@ -23,6 +23,7 @@ frontend/node_modules/
 # Frontend build
 frontend/dist/
 frontend/dist-ssr/
+frontend/dist-device/
 
 # Test output
 test-results/

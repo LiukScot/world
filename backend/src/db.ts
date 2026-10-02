@@ -1,10 +1,9 @@
-import { Database } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
 import { migrationStatements, MOOD_TAG_FIELDS, SCHEMA_VERSION, TAG_TYPES } from "./schema.ts";
 
 export type SQLiteDB = Database;
 
 const legacyIndexes = ["idx_pain_tags_entry", "idx_pain_catalog_user"];
-const SQLITE_JOURNAL_MODES = new Set(["DELETE", "TRUNCATE", "PERSIST", "MEMORY", "WAL", "OFF"]);
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -158,17 +157,6 @@ function dropLegacyPainTables(db: SQLiteDB): void {
   }
   db.exec("DROP TABLE IF EXISTS pain_entry_tags");
   db.exec("DROP TABLE IF EXISTS pain_tag_catalog");
-}
-
-export function openDb(dbPath: string, journalMode = "WAL"): SQLiteDB {
-  const db = new Database(dbPath);
-  const normalizedJournalMode = journalMode.trim().toUpperCase();
-  if (!SQLITE_JOURNAL_MODES.has(normalizedJournalMode)) {
-    throw new Error(`Unsupported SQLite journal mode: ${journalMode}`);
-  }
-  db.exec(`PRAGMA journal_mode = ${normalizedJournalMode};`);
-  db.exec("PRAGMA foreign_keys = ON;");
-  return db;
 }
 
 export function runMigrations(db: SQLiteDB): void {

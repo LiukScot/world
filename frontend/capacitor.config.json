@@ -1,0 +1,8 @@
+{
+  "appId": "app.world.local",
+  "appName": "World",
+  "webDir": "dist-device",
+  "ios": {
+    "path": "../ios"
+  }
+}

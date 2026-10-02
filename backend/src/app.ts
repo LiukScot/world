@@ -4,27 +4,14 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { env, allowedOrigins } from "./env.ts";
-import { openDb, runMigrations } from "./db.ts";
-import { createDrizzle } from "./db/index.ts";
+import { runMigrations } from "./db.ts";
+import { createDrizzle, openDb } from "./open-db.ts";
 import type { AppEnv } from "./app-env.ts";
 import { cleanupExpiredSessions } from "./middleware/auth.ts";
 import { defaultBodyLimit } from "./middleware/body-limit.ts";
 
 import auth from "./routes/auth.ts";
-import diary from "./routes/diary.ts";
-import pain from "./routes/pain.ts";
-import mood from "./routes/mood.ts";
-import preferences from "./routes/preferences.ts";
-import memorableDays from "./routes/memorable-days.ts";
-import cbt from "./routes/cbt.ts";
-import dbt from "./routes/dbt.ts";
-import backup from "./routes/backup.ts";
-import moneyTransactions from "./routes/money-transactions.ts";
-import moneyMovements from "./routes/money-movements.ts";
-import moneySnapshots from "./routes/money-snapshots.ts";
-import moneyStyles from "./routes/money-styles.ts";
-import moneyPrefs from "./routes/money-prefs.ts";
-import moneyBackup from "./routes/money-backup.ts";
+import { mountApiRoutes } from "./api.ts";
 
 // Initialize database
 fs.mkdirSync(path.dirname(env.DB_PATH), { recursive: true });
@@ -46,12 +33,10 @@ app.use("*", async (c, next) => {
   c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   c.res.headers.set("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
-  // The script-src 'self' covers theme-init.js (frontend/public/theme-init.js);
-  // the Google Fonts origins are required by its <link rel="stylesheet"> and
-  // the woff2 files it loads.
+  // The script-src 'self' covers theme-init.js (frontend/public/theme-init.js).
   c.res.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; connect-src 'self'; font-src 'self' https://fonts.gstatic.com; object-src 'none'; frame-ancestors 'none'"
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'none'"
   );
 });
 
@@ -80,27 +65,8 @@ app.use("/api/*", async (c, next) => {
   await next();
 });
 
-// Mount API routes
 app.route("/api/v1/auth", auth);
-app.route("/api/v1/diary", diary);
-app.route("/api/v1/pain", pain);
-app.route("/api/v1/mood", mood);
-app.route("/api/v1/cbt", cbt);
-app.route("/api/v1/dbt", dbt);
-app.route("/api/v1/preferences", preferences);
-app.route("/api/v1/memorable-days", memorableDays);
-app.route("/api/v1/backup", backup);
-app.route("/api/v1/data", backup);
-
-// Money realm. Namespaced because /preferences and /backup would otherwise
-// collide with the health routes above.
-app.route("/api/v1/money/transactions", moneyTransactions);
-app.route("/api/v1/money/monthly-movements", moneyMovements);
-app.route("/api/v1/money/monthly-snapshots", moneySnapshots);
-app.route("/api/v1/money/assets/styles", moneyStyles);
-app.route("/api/v1/money/preferences", moneyPrefs);
-app.route("/api/v1/money/backup", moneyBackup);
-app.route("/api/v1/money/data", moneyBackup);
+mountApiRoutes(app);
 
 // API 404 fallback
 app.all("/api/*", (c) => {

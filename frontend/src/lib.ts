@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { apiRequest } from "./transport";
 
 export const apiEnvelopeSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
   z.object({ data: dataSchema });
@@ -8,7 +9,7 @@ export async function apiFetch<T>(
   options: RequestInit,
   parser: (raw: unknown) => T
 ): Promise<T> {
-  const res = await fetch(path, {
+  const res = await apiRequest(path, {
     credentials: "include",
     headers: {
       ...(options.body ? { "content-type": "application/json" } : {}),
