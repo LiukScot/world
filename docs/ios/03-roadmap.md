@@ -64,13 +64,15 @@ covers it in CI. Passed (`tests/device.spec.ts`).
       (`.github/workflows/ios.yml`).
 - [x] Persist to `Library/world.sqlite` through the Filesystem plugin.
 - [x] Bundle the font and add the `<meta>` CSP.
-- [ ] Add safe-area padding, checked against a screenshot from the
+- [x] Add safe-area padding, checked against a screenshot from the
       phone.
 
 Check: the signed app works in airplane mode and keeps its data
 after a restart.
 
 ## Phase 4 — data and backup
+
+Tracked in #242.
 
 - [ ] Replace the three blob downloads with file + share sheet.
 - [ ] Import the server's JSON export for both realms.
@@ -83,6 +85,8 @@ The server copy stays the source of truth until this check passes.
 
 ## Phase 5 — reminders and lock
 
+Tracked in #243.
+
 - [ ] Local notification reminders, configurable in Settings.
 - [ ] Optional Face ID lock on app open.
 
@@ -91,12 +95,16 @@ until Face ID succeeds.
 
 ## Phase 6 — HealthKit
 
+Tracked in #244.
+
 - [ ] Repeat the signer spike with the HealthKit entitlement.
 - [ ] Read the chosen data types through the health plugin.
 
 Check: the app shows a value read from the Health app.
 
 ## Phase 7 — widget (blocked)
+
+Tracked in #245.
 
 Blocked until the signing service provides a profile for the
 extension's bundle identifier. It is the only item that needs

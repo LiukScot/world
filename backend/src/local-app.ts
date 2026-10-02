@@ -91,7 +91,7 @@ export function createLocalApp(sqlDb: SqlJsDatabase): LocalApp {
   // driver has the same synchronous query API.
   const db = drizzle(sqlDb, { schema }) as unknown as DrizzleDB;
 
-  const existing = db.select({ id: users.id, email: users.email, name: users.name }).from(users).limit(1).get();
+  const existing = db.select({ id: users.id, email: users.email, name: users.name }).from(users).orderBy(users.id).limit(1).get();
   const user =
     existing ??
     db

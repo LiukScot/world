@@ -77,11 +77,18 @@ export async function startLocalBackend(): Promise<void> {
   const [SQL, saved] = await Promise.all([initSqlJs({ locateFile: () => wasmUrl }), storage.load()]);
   const app = createLocalApp(saved ? new SQL.Database(saved) : new SQL.Database());
 
+  // Saves run one at a time, each exporting when its turn comes, so an older
+  // copy of the database can never be written after a newer one.
+  let lastSave: Promise<void> = Promise.resolve();
+
   setTransport(async (path, init) => {
     const response = await app.fetch(new Request(new URL(path, location.origin), init));
     const method = (init?.method ?? "GET").toUpperCase();
     if (method !== "GET" && response.ok) {
-      await storage.save(app.exportDatabase());
+      const save = lastSave.then(() => storage.save(app.exportDatabase()));
+      // The request awaiting `save` reports its failure; the queue goes on.
+      lastSave = save.catch(() => undefined);
+      await save;
     }
     return response;
   });
