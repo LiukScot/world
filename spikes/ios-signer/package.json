@@ -4,9 +4,14 @@
   "type": "module",
   "dependencies": {
     "@capacitor/core": "^8.5.2",
-    "@capacitor/ios": "^8.5.2"
+    "@capacitor/filesystem": "^8.1.4",
+    "@capacitor/ios": "^8.5.2",
+    "sql.js": "^1.14.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2"
+  },
+  "scripts": {
+    "build": "cp node_modules/sql.js/dist/sql-wasm.js node_modules/sql.js/dist/sql-wasm.wasm www/"
   }
 }

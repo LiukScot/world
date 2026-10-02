@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Copy the SQLite WebAssembly build into www/
+        run: npm run build
+
       # Copies www/ and the Capacitor config into ios/; both are gitignored.
       - name: Sync web assets
         run: npx cap sync ios
