@@ -40,6 +40,18 @@ pinned to a commit SHA, a `paths:` filter so it runs only when
 Standard macOS runners are free on public repositories. On a private
 repository they are billed per minute at the highest runner rate.
 
+### App icon
+
+The source is `ios/icon/app-icon.svg`. After editing it, regenerate the
+PNG; iOS rejects an icon with an alpha channel, hence `-alpha off`:
+
+```bash
+magick ios/icon/app-icon.svg -alpha off ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+```
+
+`frontend/public/favicon.svg` is the same sphere without the background
+square; update it by hand when the sphere changes.
+
 ## Signing
 
 The IPA is signed outside CI with an app signer. No certificate or
