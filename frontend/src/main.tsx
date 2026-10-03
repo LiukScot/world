@@ -1,9 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { RootErrorBoundary } from "./app/ErrorBoundary";
 import { getErrorMessage } from "./lib";
+import { createQueryClient } from "./query-client";
 import "@fontsource/manrope/latin-400.css";
 import "@fontsource/manrope/latin-600.css";
 import "@fontsource/manrope/latin-700.css";
@@ -24,13 +25,7 @@ if (isDevice) {
   }
 }
 
-// The device build's backend runs in the page, so requests never touch the
-// network. The default networkMode "online" pauses every query and mutation
-// while the phone reports no connection (e.g. airplane mode).
-const networkMode = isDevice ? "always" : "online";
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { networkMode }, mutations: { networkMode } },
-});
+const queryClient = createQueryClient(isDevice);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
