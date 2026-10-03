@@ -9,13 +9,13 @@ vi.mock("sonner", () => ({
   toast: { success: toastSuccess, error: toastError },
 }));
 
-import { useSettings } from "./use-settings";
+import { jsonImportPath, useDataBackup } from "./use-data-backup";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>;
 }
 
-describe("useSettings spreadsheet import", () => {
+describe("useDataBackup spreadsheet import", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     toastSuccess.mockClear();
@@ -27,9 +27,9 @@ describe("useSettings spreadsheet import", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ error: { code: "IMPORT_FAILED", message } }), { status: 422 }),
     ));
-    const { result } = renderHook(() => useSettings(), { wrapper });
+    const { result } = renderHook(() => useDataBackup(), { wrapper });
 
-    result.current.onImportXlsx(new File(["x"], "health.xlsx"));
+    result.current.onImportXlsx(new File(["x"], "world.xlsx"));
 
     await waitFor(() => expect(toastError).toHaveBeenCalledWith(message));
     expect(toastSuccess).not.toHaveBeenCalled();
@@ -37,10 +37,23 @@ describe("useSettings spreadsheet import", () => {
 
   test("falls back to the status when the response is not the error envelope", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("Bad Gateway", { status: 502 })));
-    const { result } = renderHook(() => useSettings(), { wrapper });
+    const { result } = renderHook(() => useDataBackup(), { wrapper });
 
-    result.current.onImportXlsx(new File(["x"], "health.xlsx"));
+    result.current.onImportXlsx(new File(["x"], "world.xlsx"));
 
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Spreadsheet import failed (HTTP 502)"));
+  });
+});
+
+describe("jsonImportPath", () => {
+  test("routes a single backup and the older one-realm files", () => {
+    expect(jsonImportPath({ health: {}, money: {} })).toBe("/api/v1/full-backup/json/import");
+    expect(jsonImportPath({ transactions: [], assetColors: {} })).toBe("/api/v1/money/backup/json/import");
+    expect(jsonImportPath({ diary: { rows: [] }, pain: { rows: [] } })).toBe("/api/v1/backup/json/import");
+  });
+
+  test("refuses a file with no World section", () => {
+    expect(() => jsonImportPath({ foo: 1 })).toThrow("not a World backup");
+    expect(() => jsonImportPath([])).toThrow("not a World backup");
   });
 });

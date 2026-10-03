@@ -137,6 +137,18 @@ export const memorableDays = sqliteTable(
   ]
 );
 
+export const webdavBackup = sqliteTable("webdav_backup", {
+  userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  url: text("url").notNull().default(""),
+  folder: text("folder").notNull().default(""),
+  username: text("username").notNull().default(""),
+  enabled: integer("enabled").notNull().default(0),
+  lastAttemptAt: text("last_attempt_at"),
+  lastSuccessAt: text("last_success_at"),
+  lastError: text("last_error"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const appMeta = sqliteTable("app_meta", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

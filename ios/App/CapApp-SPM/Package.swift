@@ -13,7 +13,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.2"),
         .package(name: "CapacitorFilesystem", path: "../../../frontend/node_modules/@capacitor/filesystem"),
-        .package(name: "CapacitorShare", path: "../../../frontend/node_modules/@capacitor/share")
+        .package(name: "CapacitorShare", path: "../../../frontend/node_modules/@capacitor/share"),
+        .package(name: "CapacitorSecureStoragePlugin", path: "../../../frontend/node_modules/capacitor-secure-storage-plugin")
     ],
     targets: [
         .target(
@@ -22,7 +23,8 @@ let package = Package(
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
                 .product(name: "CapacitorFilesystem", package: "CapacitorFilesystem"),
-                .product(name: "CapacitorShare", package: "CapacitorShare")
+                .product(name: "CapacitorShare", package: "CapacitorShare"),
+                .product(name: "CapacitorSecureStoragePlugin", package: "CapacitorSecureStoragePlugin")
             ]
         )
     ]

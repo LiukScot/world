@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 19;
+export const SCHEMA_VERSION = 20;
 
 export const METRIC_KINDS = ["scale", "counter", "tags", "text", "measure"] as const;
 export type MetricKind = (typeof METRIC_KINDS)[number];
@@ -402,6 +402,20 @@ export const migrationStatements: string[] = [
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_asset_styles_user_asset ON asset_styles(user_id, asset)`,
+  // schema-v20: the device app's WebDAV backup. The password is kept in the
+  // iOS Keychain so it never ends up in the database file that is uploaded.
+  `CREATE TABLE IF NOT EXISTS webdav_backup (
+    user_id INTEGER PRIMARY KEY,
+    url TEXT NOT NULL DEFAULT '',
+    folder TEXT NOT NULL DEFAULT '',
+    username TEXT NOT NULL DEFAULT '',
+    enabled INTEGER NOT NULL DEFAULT 0,
+    last_attempt_at TEXT,
+    last_success_at TEXT,
+    last_error TEXT,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`,
 ];
 
 export const TAG_TYPES = ["area", "symptoms", "activities", "medicines", "habits", "other"] as const;

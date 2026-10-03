@@ -2,7 +2,8 @@ import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import ExcelJS from "exceljs";
 import { parseJson } from "../helpers.ts";
-import { moneyBackupImportSchema } from "../schemas.ts";
+import { moneyBackupImportSchema, type MoneyBackupImport } from "../schemas.ts";
+import type { DrizzleDB } from "../db/index.ts";
 import { requireAuth } from "../middleware/auth.ts";
 import { applyImport, buildBackupPayload, coerceBoolean, wipeMoneyData, type ImportCounts } from "../money-backup-helpers.ts";
 import { sheetToObjects } from "../xlsx-helpers.ts";
@@ -16,7 +17,7 @@ const MAX_IMPORT_ROWS = 50_000;
 // Rejects oversized uploads before the body is buffered. The per-branch checks
 // inside readWorkbook still run: they catch a body that lies about its length,
 // and they report which limit was hit.
-const limitUploadSize = bodyLimit({
+export const limitUploadSize = bodyLimit({
   maxSize: MAX_XLSX_BYTES,
   onError: (c) => c.json({ error: { code: "FILE_TOO_LARGE", message: "File exceeds 10 MB limit" } }, 413),
 });
@@ -48,27 +49,24 @@ moneyBackup.get("/json", (c) => {
   return c.json({ data: buildBackupPayload(c.get("db"), c.get("userId")) });
 });
 
-moneyBackup.post("/json/import", limitUploadSize, async (c) => {
-  const db = c.get("db");
-  const rawDb = c.get("rawDb");
-  const userId = c.get("userId");
-  const body = await parseJson(c, moneyBackupImportSchema);
-
-  const tx = rawDb.transaction(() => {
-    wipeMoneyData(db, userId, true, true);
-    return applyImport(db, userId, {
-      transactions: body.transactions ?? [],
-      monthlyMovements: body.monthlyMovements ?? [],
-      monthlySnapshots: body.monthlySnapshots ?? [],
-      assetColors: body.assetColors ?? {},
-      assetRisks: body.assetRisks ?? {},
-      preferences: { showZeroAssets: coerceBoolean((body.preferences ?? {}).showZeroAssets) },
-      replaceStyles: true,
-      replacePrefs: true,
-    });
+/** Replaces the user's Money data with a backup. Call inside a transaction. */
+export function importMoneyJson(db: DrizzleDB, userId: number, body: MoneyBackupImport): ImportCounts {
+  wipeMoneyData(db, userId, true, true);
+  return applyImport(db, userId, {
+    transactions: body.transactions ?? [],
+    monthlyMovements: body.monthlyMovements ?? [],
+    monthlySnapshots: body.monthlySnapshots ?? [],
+    assetColors: body.assetColors ?? {},
+    assetRisks: body.assetRisks ?? {},
+    preferences: { showZeroAssets: coerceBoolean((body.preferences ?? {}).showZeroAssets) },
+    replaceStyles: true,
+    replacePrefs: true,
   });
+}
 
-  return runImport(c, tx);
+moneyBackup.post("/json/import", limitUploadSize, async (c) => {
+  const body = await parseJson(c, moneyBackupImportSchema);
+  return runImport(c, c.get("rawDb").transaction(() => importMoneyJson(c.get("db"), c.get("userId"), body)));
 });
 
 /**
@@ -83,10 +81,11 @@ function addObjectsSheet(wb: ExcelJS.Workbook, name: string, rows: Record<string
   for (const row of rows) ws.addRow(row);
 }
 
-moneyBackup.get("/xlsx", async (c) => {
-  const payload = buildBackupPayload(c.get("db"), c.get("userId"));
+export const MONEY_SHEETS = ["rawTransactions", "movements", "monthlySnapshots", "assetStyles", "preferences"] as const;
 
-  const wb = new ExcelJS.Workbook();
+/** Adds the Money sheets named in MONEY_SHEETS. */
+export function addMoneySheets(wb: ExcelJS.Workbook, db: DrizzleDB, userId: number): void {
+  const payload = buildBackupPayload(db, userId);
   addObjectsSheet(wb, "rawTransactions", payload.transactions);
   addObjectsSheet(wb, "movements", payload.monthlyMovements);
   addObjectsSheet(wb, "monthlySnapshots", payload.monthlySnapshots);
@@ -102,7 +101,11 @@ moneyBackup.get("/xlsx", async (c) => {
     })),
   );
   addObjectsSheet(wb, "preferences", [{ showZeroAssets: payload.preferences.showZeroAssets }]);
+}
 
+moneyBackup.get("/xlsx", async (c) => {
+  const wb = new ExcelJS.Workbook();
+  addMoneySheets(wb, c.get("db"), c.get("userId"));
   const buf = Buffer.from(await wb.xlsx.writeBuffer());
   c.header("content-type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   c.header("content-disposition", `attachment; filename="money-${new Date().toISOString().slice(0, 10)}.xlsx"`);
@@ -114,7 +117,7 @@ function looksLikeZip(bytes: Uint8Array): boolean {
 }
 
 /** Reads the upload from either a multipart form or a JSON {base64} body. */
-async function readWorkbook(c: Context<Env>): Promise<ExcelJS.Workbook | Response> {
+export async function readWorkbook(c: Context<Env>): Promise<ExcelJS.Workbook | Response> {
   const wb = new ExcelJS.Workbook();
   const contentType = c.req.header("content-type") ?? "";
   let bytes: ArrayBuffer;
@@ -156,23 +159,18 @@ async function readWorkbook(c: Context<Env>): Promise<ExcelJS.Workbook | Respons
   return wb;
 }
 
-moneyBackup.post("/xlsx/import", limitUploadSize, async (c) => {
-  const db = c.get("db");
-  const rawDb = c.get("rawDb");
-  const userId = c.get("userId");
-
-  const wb = await readWorkbook(c);
-  if (wb instanceof Response) return wb;
-
+/**
+ * Replaces the Money data with the workbook's sheets. Call inside a
+ * transaction. Null when a sheet is over the row limit.
+ */
+export function moneySheetsImport(wb: ExcelJS.Workbook): ((db: DrizzleDB, userId: number) => ImportCounts) | null {
   const styleSheet = wb.getWorksheet("assetStyles");
   const prefSheet = wb.getWorksheet("preferences");
   const transactions = sheetToObjects(wb.getWorksheet("rawTransactions"));
   const monthlyMovements = sheetToObjects(wb.getWorksheet("movements"));
   const monthlySnapshots = sheetToObjects(wb.getWorksheet("monthlySnapshots"));
 
-  if ([transactions, monthlyMovements, monthlySnapshots].some((rows) => rows.length > MAX_IMPORT_ROWS)) {
-    return c.json({ error: { code: "FILE_TOO_LARGE", message: "Import exceeds row limit (50 000 per sheet)" } }, 400);
-  }
+  if ([transactions, monthlyMovements, monthlySnapshots].some((rows) => rows.length > MAX_IMPORT_ROWS)) return null;
 
   const validColorHex = /^#[0-9a-fA-F]{6}$/;
   const validRiskLevels = new Set(["low", "medium", "high"]);
@@ -193,7 +191,7 @@ moneyBackup.post("/xlsx/import", limitUploadSize, async (c) => {
   const replaceStyles = Boolean(styleSheet);
   const replacePrefs = Boolean(prefSheet);
 
-  const tx = rawDb.transaction(() => {
+  return (db, userId) => {
     wipeMoneyData(db, userId, replaceStyles, replacePrefs);
     return applyImport(db, userId, {
       transactions,
@@ -205,9 +203,17 @@ moneyBackup.post("/xlsx/import", limitUploadSize, async (c) => {
       replaceStyles,
       replacePrefs,
     });
-  });
+  };
+}
 
-  return runImport(c, tx);
+export const ROW_LIMIT_ERROR = { error: { code: "FILE_TOO_LARGE", message: "Import exceeds row limit (50 000 per sheet)" } };
+
+moneyBackup.post("/xlsx/import", limitUploadSize, async (c) => {
+  const wb = await readWorkbook(c);
+  if (wb instanceof Response) return wb;
+  const apply = moneySheetsImport(wb);
+  if (!apply) return c.json(ROW_LIMIT_ERROR, 400);
+  return runImport(c, c.get("rawDb").transaction(() => apply(c.get("db"), c.get("userId"))));
 });
 
 moneyBackup.post("/purge", (c) => {

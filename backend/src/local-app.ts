@@ -6,6 +6,7 @@ import * as schema from "./db/drizzle-schema.ts";
 import { users, type DrizzleDB } from "./db/index.ts";
 import { runMigrations, type SQLiteDB } from "./db.ts";
 import { mountApiRoutes } from "./api.ts";
+import webdavBackupRoutes from "./routes/webdav-backup.ts";
 import type { AppEnv } from "./app-env.ts";
 
 const LOCAL_USER_EMAIL = "local@device";
@@ -115,6 +116,7 @@ export function createLocalApp(sqlDb: SqlJsDatabase): LocalApp {
   );
 
   mountApiRoutes(app);
+  app.route("/api/v1/webdav-backup", webdavBackupRoutes);
 
   app.all("/api/*", (c) => c.json({ error: { code: "NOT_FOUND", message: "Route not found" } }, 404));
 

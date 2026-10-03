@@ -19,24 +19,29 @@ const REMOVE_BTN =
 const ADDER_BTN =
   "border-0 bg-transparent px-3 py-1 min-h-[24px] rounded-full text-xs font-semibold font-body shadow-none cursor-pointer transition-[color,background] duration-150 ease-[ease]";
 
-type SectionHeadVariant = "default" | "dashboard" | "ds" | "tags";
+type SectionHeadVariant = "default" | "dashboard" | "ds" | "tags" | "accent";
 const SECTION_HEAD: Record<SectionHeadVariant, string> = {
   default: "flex justify-between gap-3 pb-1 mt-5",
   dashboard: "flex justify-between gap-3 pb-2 mt-5",
   ds: "flex flex-col gap-[2px] pb-1 mt-5",
   tags: "flex justify-between gap-3 mb-0",
+  // A divider above each section, except the first one on the page.
+  accent: "flex justify-between gap-3 pb-1 mt-5 pt-5 border-t border-border first:pt-0 first:border-t-0",
 };
 const SECTION_TITLE: Record<SectionHeadVariant, string> = {
   default: "[text-box:trim-both_cap_alphabetic] text-xs font-bold tracking-[0.16em] uppercase text-muted",
   dashboard: "[text-box:trim-both_cap_alphabetic] text-control font-bold tracking-[0.16em] uppercase text-accent",
   ds: "[text-box:trim-both_cap_alphabetic] text-xs font-bold tracking-[0.16em] uppercase text-muted",
   tags: "[text-box:trim-both_cap_alphabetic] text-xs font-bold tracking-[0.16em] uppercase text-muted",
+  // The realm's accent: white in Settings, the realm colour elsewhere.
+  accent: "[text-box:trim-both_cap_alphabetic] text-xs font-bold tracking-[0.16em] uppercase text-accent",
 };
 const SECTION_ASIDE: Record<SectionHeadVariant, string> = {
   default: "text-micro text-muted-soft tabular-nums",
   dashboard: "text-micro text-muted-soft tabular-nums",
   ds: "text-micro text-muted-soft tabular-nums",
   tags: "text-xs text-muted-soft",
+  accent: "text-micro text-muted-soft tabular-nums",
 };
 
 export function InlineFeedback({ message, className }: { message: InlineMessage | null; className?: string }) {

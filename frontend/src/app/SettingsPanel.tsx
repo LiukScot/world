@@ -5,9 +5,10 @@ import { useTheme } from "../hooks/use-theme";
 import { getErrorMessage } from "../lib";
 import { InlineFeedback, SectionHead } from "./shared";
 import { MedicinePreselectionSection } from "./MedicinePreselectionSection";
-import { Button, buttonClass } from "../components/ui/Button";
+import { Button } from "../components/ui/Button";
 import { FieldLine } from "../components/ui/FieldLine";
 import { MoneySettings, type MoneySettingsProps } from "./money/MoneySettings";
+import { DataSection } from "./DataSection";
 
 type SettingsSectionProps = {
   auth: ReturnType<typeof useAuth>;
@@ -17,17 +18,13 @@ type SettingsSectionProps = {
   onPurgeArm: () => void;
   onPurgeConfirm: () => void;
   onPurgeCancel: () => void;
-  onExportJson: () => void;
-  onImportJson: (file: File) => void;
-  onExportXlsx: () => void;
-  onImportXlsx: (file: File) => void;
 };
 
 function ThemeBlock() {
   const { theme, setTheme } = useTheme();
   return (
     <div className="grid gap-3">
-      <SectionHead title="Theme" aside="applies to every realm" />
+      <SectionHead title="Theme" aside="applies to every realm" variant="accent" />
       {/* Named cards, not bare colour circles: the swatches were the only
           thing telling the three apart, and colour alone is not a label
           you can read, search or hear. */}
@@ -95,62 +92,6 @@ function AccountBlock({ auth }: Pick<SettingsSectionProps, "auth">) {
           }
         />
       </form>
-    </div>
-  );
-}
-
-function BackupBlock({
-  onExportJson,
-  onImportJson,
-  onExportXlsx,
-  onImportXlsx,
-}: Pick<SettingsSectionProps, "onExportJson" | "onImportJson" | "onExportXlsx" | "onImportXlsx">) {
-  return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-2">
-      <div className="flex items-center justify-between gap-5 px-[14px] py-[12px] rounded-md bg-card-strong max-sm:flex-col max-sm:items-stretch">
-        <div className="flex flex-col gap-[2px] min-w-0">
-          <span className="text-sm font-bold text-text">JSON</span>
-          <span className="text-xs text-muted">Full database</span>
-        </div>
-        <div className="flex gap-2 flex-shrink-0 max-sm:justify-end">
-          <Button type="button" size="sm" onClick={onExportJson}>Export</Button>
-          <label className={`${buttonClass("default", "sm")} relative overflow-hidden cursor-pointer`}>
-            Import
-            <input
-              type="file"
-              accept=".json"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onImportJson(file);
-                e.target.value = "";
-              }}
-            />
-          </label>
-        </div>
-      </div>
-      <div className="flex items-center justify-between gap-5 px-[14px] py-[12px] rounded-md bg-card-strong max-sm:flex-col max-sm:items-stretch">
-        <div className="flex flex-col gap-[2px] min-w-0">
-          <span className="text-sm font-bold text-text">XLSX</span>
-          <span className="text-xs text-muted">Spreadsheet</span>
-        </div>
-        <div className="flex gap-2 flex-shrink-0 max-sm:justify-end">
-          <Button type="button" size="sm" onClick={onExportXlsx}>Export</Button>
-          <label className={`${buttonClass("default", "sm")} relative overflow-hidden cursor-pointer`}>
-            Import
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onImportXlsx(file);
-                e.target.value = "";
-              }}
-            />
-          </label>
-        </div>
-      </div>
     </div>
   );
 }
@@ -243,14 +184,7 @@ export function SettingsScreen({ nav, money, ...props }: SettingsSectionProps & 
       return (
         <div className="grid grid-cols-1 gap-5">
           <MedicinePreselectionSection enabled />
-          <SectionHead title="Backup" />
-          <BackupBlock
-            onExportJson={props.onExportJson}
-            onImportJson={props.onImportJson}
-            onExportXlsx={props.onExportXlsx}
-            onImportXlsx={props.onImportXlsx}
-          />
-          <SectionHead title="Danger zone" />
+          <SectionHead title="Danger zone" variant="accent" />
           <DangerBlock
             purgeConfirmArmed={props.purgeConfirmArmed}
             purgePending={props.purgePending}
@@ -263,6 +197,8 @@ export function SettingsScreen({ nav, money, ...props }: SettingsSectionProps & 
       );
     case "settings-money":
       return <MoneySettings {...money} />;
+    case "settings-data":
+      return <DataSection />;
     default:
       return null;
   }

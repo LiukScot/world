@@ -4,7 +4,7 @@ import initSqlJs from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { createLocalApp } from "world-local-backend";
 import { setTransport } from "./transport";
-import { toBase64 } from "./save-file";
+import { fromBase64, toBase64 } from "./save-file";
 
 const FILE = "world.sqlite";
 
@@ -12,13 +12,6 @@ type Storage = {
   load(): Promise<Uint8Array | null>;
   save(bytes: Uint8Array): Promise<void>;
 };
-
-function fromBase64(text: string): Uint8Array {
-  const binary = atob(text);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
 
 // A file in Library/ is part of the device backup and is not subject to the
 // storage eviction WebKit applies to IndexedDB.
@@ -60,6 +53,25 @@ async function browserStorage(): Promise<Storage> {
   };
 }
 
+type LocalDatabase = {
+  /** The database file as it is now. */
+  snapshot(): Uint8Array;
+  /**
+   * Replaces the whole database with a backup file and reloads the page.
+   * Rejects, leaving the current data untouched, if the file is not a World
+   * database.
+   */
+  replace(bytes: Uint8Array): Promise<void>;
+};
+
+let localDatabase: LocalDatabase | null = null;
+
+/** The database of the backend running in the page. Device build only. */
+export function getLocalDatabase(): LocalDatabase {
+  if (!localDatabase) throw new Error("The in-page backend is not running");
+  return localDatabase;
+}
+
 /**
  * Starts the backend inside the page and routes API requests to it. The
  * database is restored from storage, and written back after every request
@@ -73,8 +85,49 @@ export async function startLocalBackend(): Promise<void> {
   // Saves run one at a time, each exporting when its turn comes, so an older
   // copy of the database can never be written after a newer one.
   let lastSave: Promise<void> = Promise.resolve();
+  let replaced = false;
+
+  localDatabase = {
+    snapshot: () => app.exportDatabase(),
+    async replace(bytes) {
+      const candidate = new SQL.Database(bytes);
+      let migrated: Uint8Array;
+      try {
+        if (candidate.exec("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_meta'").length === 0) {
+          throw new Error("This file is not a World backup");
+        }
+        // Opening it as an app runs the migrations, which brings an older
+        // backup up to this schema.
+        const restored = createLocalApp(candidate);
+        // The restored data is itself a backup on the server. Recording that
+        // keeps the daily backup from running on the reload and overwriting
+        // today's file with this older copy.
+        await restored.fetch(
+          new Request(new URL("/api/v1/webdav-backup/result", location.origin), {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ ok: true }),
+          }),
+        );
+        migrated = restored.exportDatabase();
+      } finally {
+        candidate.close();
+      }
+      replaced = true;
+      try {
+        await lastSave;
+        await storage.save(migrated);
+      } catch (error) {
+        replaced = false;
+        throw error;
+      }
+      location.reload();
+    },
+  };
 
   setTransport(async (path, init) => {
+    // A request answered from the old database would save it over the restore.
+    if (replaced) throw new Error("The database is being replaced");
     const response = await app.fetch(new Request(new URL(path, location.origin), init));
     const method = (init?.method ?? "GET").toUpperCase();
     if (method !== "GET" && response.ok) {

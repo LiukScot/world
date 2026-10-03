@@ -21,5 +21,6 @@ export {
   transactions,
   monthlyMovements,
   monthlySnapshots,
-  assetStyles
+  assetStyles,
+  webdavBackup
 } from "./drizzle-schema.ts";
