@@ -12,7 +12,7 @@
   </defs>
   <rect width="1024" height="1024" fill="url(#bg)"/>
   <!-- scaled about the centre to leave an empty margin inside the iOS mask -->
-  <g transform="translate(512 512) scale(0.82) translate(-512 -512)">
+  <g transform="translate(512 512) scale(0.93) translate(-512 -512)">
   <g clip-path="url(#clip)">
     <rect width="1024" height="1024" fill="#121214"/>
     <g transform="rotate(26 512 512)">
