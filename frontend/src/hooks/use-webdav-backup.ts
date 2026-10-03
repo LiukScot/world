@@ -22,8 +22,10 @@ const okSchema = apiEnvelopeSchema(z.object({ ok: z.boolean() }));
 export type WebdavSettings = z.infer<typeof settingsSchema>["data"];
 export type WebdavForm = Pick<WebdavSettings, "url" | "folder" | "username" | "enabled"> & { password: string };
 
-// Loaded on demand: it carries sql.js, which the server build must not bundle.
+// The constant MODE check lets the server build drop this import: it carries
+// sql.js and the backend, which that build cannot resolve.
 async function localDatabase() {
+  if (import.meta.env.MODE !== "device") throw new Error("The local database exists only in the iOS app");
   return (await import("../local-backend")).getLocalDatabase();
 }
 
