@@ -157,9 +157,8 @@ The server keeps its login unchanged.
 
 ## Moving the existing data
 
-Settings → Backup exports and imports JSON for both realms
-(`/api/v1/backup/json`, `/api/v1/money/backup/json`). Export on the
-server, import in the app. The Health export covers diary, pain, CBT,
+Settings → Data exports and imports one JSON file for both realms
+(`/api/v1/full-backup/json`). Export on the server, import in the app. The Health export covers diary, pain, CBT,
 DBT and memorable days. Money transactions get new ids on import.
 
 ## Backup once the data is on the phone
@@ -168,7 +167,25 @@ The phone holds the only copy. Three layers:
 
 1. Device backup (iCloud or computer) includes `Library/`.
 2. The in-app JSON and Excel export, through the share sheet.
-3. Optional: `UIFileSharingEnabled` in `Info.plist` and the database
-   in `Documents/` make the file visible in the Files app.
+3. A daily upload of the whole database file to a WebDAV server.
 
 Layer 2 must work before the server copy is retired.
+
+### WebDAV
+
+The upload is the sql.js export, so it carries every table, the WebDAV
+settings included. The password is the exception: it is kept in the iOS
+Keychain (`capacitor-secure-storage-plugin`) and never written to the
+database.
+
+Requests use the native HTTP plugin (`CapacitorHttp`). A `fetch` from the
+web view would be refused twice: most WebDAV servers send no CORS headers,
+and the page's CSP allows only its own origin.
+
+iOS gives an app no reliable timer. The check runs when the app opens or
+returns to the foreground: a backup is due 24 hours after the last success,
+and a failure is retried at most once an hour. After an upload, all but the
+30 newest `world-YYYY-MM-DD.sqlite` files in the folder are deleted.
+
+A restore downloads one file, opens it with sql.js to run the migrations,
+saves it in place of `Library/world.sqlite` and reloads the page.

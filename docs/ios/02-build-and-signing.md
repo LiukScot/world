@@ -134,6 +134,7 @@ There is no iOS simulator on Linux. Layout is checked on the device.
 | Offline | architecture | none | none |
 | Local reminders | `@capacitor/local-notifications` | none | none |
 | Backup via share sheet | `@capacitor/filesystem`, `@capacitor/share` | none | none |
+| WebDAV backup, password in Keychain | `CapacitorHttp`, `capacitor-secure-storage-plugin` | none | none |
 | Face ID lock | `@capgo/capacitor-native-biometric` or `@aparajita/capacitor-biometric-auth` | none; one `Info.plist` key | none |
 | HealthKit | `@capgo/capacitor-health` | none; `Info.plist` keys + entitlement | low: the profile carries the entitlement; untested on device |
 | Siri Shortcuts / App Intents | no maintained plugin found | yes | low |

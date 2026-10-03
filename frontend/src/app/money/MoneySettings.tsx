@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Button, buttonClass } from "../../components/ui/Button";
+import { Button } from "../../components/ui/Button";
 import { Select } from "../../components/ui/select";
 import { InlineFeedback, SectionHead } from "../shared";
 import { EmptyState } from "../screen-helpers";
@@ -13,11 +13,6 @@ export type MoneySettingsProps = {
   assets: string[];
   stylesLoading: boolean;
   onChangeStyle: (asset: string, patch: { colorHex?: string | null; riskLevel?: RiskLevel | null }) => void;
-  backupMessage: InlineMessage | null;
-  onExportJson: () => void;
-  onImportJson: (file: File) => void;
-  onExportXlsx: () => void;
-  onImportXlsx: (file: File) => void;
   purgeConfirmArmed: boolean;
   purgePending: boolean;
   purgeError: InlineMessage | null;
@@ -30,12 +25,14 @@ const RISK_OPTIONS = [{ value: "", label: "not set" }, ...RISK_LEVELS.map((r) =>
 const DEFAULT_SWATCH = "#34d399";
 
 const ROW = "flex items-center justify-between gap-5 px-[14px] py-[12px] rounded-md bg-card-strong max-sm:flex-col max-sm:items-stretch";
+// A switch stays beside its label on a phone: stacked, it reads as a separate control.
+const TOGGLE_ROW = "flex items-center justify-between gap-5 px-[14px] py-[12px] rounded-md bg-card-strong";
 
 function PreferencesBlock({ showZeroAssets, onToggleShowZeroAssets }: Pick<MoneySettingsProps, "showZeroAssets" | "onToggleShowZeroAssets">) {
   const id = useId();
   const hintId = `${id}-hint`;
   return (
-    <div className={ROW}>
+    <div className={TOGGLE_ROW}>
       <div className="flex flex-col gap-[2px] min-w-0">
         <label htmlFor={id} className="text-sm font-bold text-text cursor-pointer">Show zero-value assets</label>
         <span id={hintId} className="text-xs text-muted">Keep assets you have fully sold off visible in lists and charts. Same switch as the one on the dashboard.</span>
@@ -125,47 +122,6 @@ function AssetsBlock({ styles, assets, stylesLoading, onChangeStyle }: Pick<Mone
   );
 }
 
-function BackupBlock({ backupMessage, onExportJson, onImportJson, onExportXlsx, onImportXlsx }: Pick<MoneySettingsProps, "backupMessage" | "onExportJson" | "onImportJson" | "onExportXlsx" | "onImportXlsx">) {
-  const formats = [
-    { label: "JSON", hint: "Transactions, movements, snapshots, styles", accept: ".json", onExport: onExportJson, onImport: onImportJson },
-    { label: "XLSX", hint: "Spreadsheet, one sheet per table", accept: ".xlsx,.xls", onExport: onExportXlsx, onImport: onImportXlsx },
-  ];
-  return (
-    <div className="grid gap-3">
-      <p className="text-control text-muted m-0 max-w-[60ch]">
-        Importing replaces the money data on this account — it does not merge.
-      </p>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-2">
-        {formats.map((f) => (
-          <div key={f.label} className={ROW}>
-            <div className="flex flex-col gap-[2px] min-w-0">
-              <span className="text-sm font-bold text-text">{f.label}</span>
-              <span className="text-xs text-muted">{f.hint}</span>
-            </div>
-            <div className="flex gap-2 flex-shrink-0 max-sm:justify-end">
-              <Button type="button" size="sm" onClick={f.onExport}>Export</Button>
-              <label className={`${buttonClass("default", "sm")} relative overflow-hidden cursor-pointer`}>
-                Import
-                <input
-                  type="file"
-                  accept={f.accept}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) f.onImport(file);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            </div>
-          </div>
-        ))}
-      </div>
-      <InlineFeedback message={backupMessage} />
-    </div>
-  );
-}
-
 function DangerBlock({ purgeConfirmArmed, purgePending, purgeError, onPurgeArm, onPurgeConfirm, onPurgeCancel }: Pick<MoneySettingsProps, "purgeConfirmArmed" | "purgePending" | "purgeError" | "onPurgeArm" | "onPurgeConfirm" | "onPurgeCancel">) {
   return (
     <div className="flex flex-col gap-3">
@@ -204,13 +160,11 @@ function DangerBlock({ purgeConfirmArmed, purgePending, purgeError, onPurgeArm, 
 export function MoneySettings(props: MoneySettingsProps) {
   return (
     <div className="grid grid-cols-1 gap-5">
-      <SectionHead title="Preferences" />
+      <SectionHead title="Preferences" variant="accent" />
       <PreferencesBlock {...props} />
-      <SectionHead title="Assets" />
+      <SectionHead title="Assets" variant="accent" />
       <AssetsBlock {...props} />
-      <SectionHead title="Backup" />
-      <BackupBlock {...props} />
-      <SectionHead title="Danger zone" />
+      <SectionHead title="Danger zone" variant="accent" />
       <DangerBlock {...props} />
     </div>
   );

@@ -1,19 +1,8 @@
 import { useState } from "react";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { apiEnvelopeSchema, apiFetch, getErrorMessage } from "../lib";
-import { apiRequest } from "../transport";
-import { saveFile } from "../save-file";
-import {
-  BACKUP_JSON_EXPORT_OK,
-  BACKUP_JSON_IMPORT_OK,
-  BACKUP_XLSX_EXPORT_OK,
-  BACKUP_XLSX_IMPORT_OK,
-  defaultPrefsValue,
-  prefsSchema,
-} from "../app/core";
-import type { InlineMessage } from "../app/core";
+import { defaultPrefsValue, prefsSchema } from "../app/core";
 
 export function usePrefs(enabled: boolean) {
   const queryClient = useQueryClient();
@@ -49,17 +38,6 @@ export function usePrefs(enabled: boolean) {
   return { prefsQuery, prefsMutation, savePrefsPatch };
 }
 
-// The spreadsheet routes are called with fetch directly (a file, not JSON,
-// goes each way), so the error envelope apiFetch would unwrap is read here.
-async function responseErrorMessage(response: Response, fallback: string): Promise<string> {
-  const body = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-  return body?.error?.message ?? `${fallback} (HTTP ${response.status})`;
-}
-
-function datedName(extension: string): string {
-  return `health-backup-${new Date().toISOString().slice(0, 10)}.${extension}`;
-}
-
 export function useSettings() {
   const queryClient = useQueryClient();
   const [purgeConfirmArmed, setPurgeConfirmArmed] = useState(false);
@@ -75,52 +53,6 @@ export function useSettings() {
     },
   });
 
-  const runBackupAction = async (action: () => Promise<void>, successMessage: InlineMessage) => {
-    try {
-      await action();
-      toast.success(successMessage.text);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
-
-  const doExportJson = async () => {
-    const payload = await apiFetch("/api/v1/backup/json", { method: "GET" }, (raw) => apiEnvelopeSchema(z.unknown()).parse(raw).data);
-    await saveFile(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), datedName("json"));
-  };
-
-  const doImportJson = async (file: File) => {
-    const text = await file.text();
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      throw new Error("File is not valid JSON");
-    }
-    await apiFetch("/api/v1/backup/json/import", { method: "POST", body: JSON.stringify(parsed) }, (raw) =>
-      apiEnvelopeSchema(z.object({ ok: z.boolean() })).parse(raw).data,
-    );
-    await queryClient.invalidateQueries();
-  };
-
-  const doExportXlsx = async () => {
-    const response = await apiRequest("/api/v1/backup/xlsx", { credentials: "include" });
-    if (!response.ok) throw new Error(await responseErrorMessage(response, "Spreadsheet export failed"));
-    await saveFile(await response.blob(), datedName("xlsx"));
-  };
-
-  const doImportXlsx = async (file: File) => {
-    const form = new FormData();
-    form.append("file", file);
-    const response = await apiRequest("/api/v1/backup/xlsx/import", {
-      method: "POST",
-      credentials: "include",
-      body: form,
-    });
-    if (!response.ok) throw new Error(await responseErrorMessage(response, "Spreadsheet import failed"));
-    await queryClient.invalidateQueries();
-  };
-
   return {
     purgeConfirmArmed,
     purgePending: purgeMutation.isPending,
@@ -134,9 +66,5 @@ export function useSettings() {
       purgeMutation.reset();
       setPurgeConfirmArmed(false);
     },
-    onExportJson: () => void runBackupAction(doExportJson, BACKUP_JSON_EXPORT_OK),
-    onImportJson: (file: File) => void runBackupAction(() => doImportJson(file), BACKUP_JSON_IMPORT_OK),
-    onExportXlsx: () => void runBackupAction(doExportXlsx, BACKUP_XLSX_EXPORT_OK),
-    onImportXlsx: (file: File) => void runBackupAction(() => doImportXlsx(file), BACKUP_XLSX_IMPORT_OK),
   };
 }

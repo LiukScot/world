@@ -151,3 +151,40 @@ describe("server export restores on the device", () => {
     expect(withoutIds(restored)).toEqual(withoutIds(fromServer));
   });
 });
+
+describe("WebDAV backup settings", () => {
+  const settings = { url: "https://dav.example.com/remote.php/dav", folder: "world", username: "me", enabled: true };
+
+  function put(app: ReturnType<typeof createLocalApp>, body: unknown) {
+    return app.fetch(request("/api/v1/webdav-backup", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+  }
+
+  async function read(app: ReturnType<typeof createLocalApp>) {
+    const res = await app.fetch(request("/api/v1/webdav-backup"));
+    return ((await res.json()) as { data: Record<string, unknown> }).data;
+  }
+
+  test("are saved, recorded and kept in an exported database", async () => {
+    const first = createLocalApp(new SQL.Database());
+    expect((await put(first, settings)).status).toBe(200);
+    await first.fetch(post("/api/v1/webdav-backup/result", { ok: false, error: "401 Unauthorized" }));
+    await first.fetch(post("/api/v1/webdav-backup/result", { ok: true }));
+
+    const restored = await read(createLocalApp(new SQL.Database(first.exportDatabase())));
+    expect(restored).toMatchObject({ ...settings, lastError: null });
+    expect(restored.lastSuccessAt).toBe(restored.lastAttemptAt);
+    expect(typeof restored.lastSuccessAt).toBe("string");
+  });
+
+  test("reject a non-http URL and turning on without a URL", async () => {
+    const app = createLocalApp(new SQL.Database());
+    expect((await put(app, { ...settings, url: "ftp://dav.example.com" })).status).toBe(400);
+    expect((await put(app, { ...settings, url: "" })).status).toBe(400);
+    expect((await read(app)).enabled).toBe(false);
+  });
+
+  test("are not served by the server API", async () => {
+    const server = await createServerApp();
+    expect((await server.fetch(request("/api/v1/webdav-backup"))).status).toBe(404);
+  });
+});

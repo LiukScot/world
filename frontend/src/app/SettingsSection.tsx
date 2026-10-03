@@ -23,10 +23,6 @@ export function SettingsSection({
   onPurgeArm: () => void;
   onPurgeConfirm: () => void;
   onPurgeCancel: () => void;
-  onExportJson: () => void;
-  onImportJson: (file: File) => void;
-  onExportXlsx: () => void;
-  onImportXlsx: (file: File) => void;
 }) {
   // The design system is a page of its own rather than a settings form, and
   // it is the heaviest thing in the realm, so it stays lazy.

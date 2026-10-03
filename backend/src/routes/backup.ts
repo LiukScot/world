@@ -1,10 +1,10 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { asc, eq, desc } from "drizzle-orm";
 import ExcelJS from "exceljs";
 import type { DrizzleDB } from "../db/index.ts";
 import { cbtEntries, dbtEntries, diaryEntries, memorableDays, painEntries, userPreferences, painRemovedOptions } from "../db/index.ts";
-import { toNullableInt, toNullableNumber } from "../db.ts";
+import { toNullableInt, toNullableNumber, type SQLiteDB } from "../db.ts";
 import {
   parseJson,
   ImportRowError,
@@ -16,7 +16,7 @@ import {
   rowPainField,
   mergeOptions,
 } from "../helpers.ts";
-import { backupImportSchema, BACKUP_MAX_ROWS, DEFAULT_MODEL } from "../schemas.ts";
+import { backupImportSchema, BACKUP_MAX_ROWS, DEFAULT_MODEL, type BackupImport } from "../schemas.ts";
 import { requireAuth } from "../middleware/auth.ts";
 import { sheetToObjects } from "../xlsx-helpers.ts";
 import { loadPainOptionsForUser, loadPreselectedMedicines } from "./pain.ts";
@@ -88,10 +88,8 @@ function loadJournalBackup(db: DrizzleDB, userId: number) {
   return { cbt, dbt, memorableDays: days };
 }
 
-backup.get("/json", (c) => {
-  const db = c.get("db");
-  const userId = c.get("userId");
-
+/** The Health half of a backup: entries, option lists and preferences. */
+export function buildHealthJson(db: DrizzleDB, userId: number) {
   const prefs = db.select({
     model: userPreferences.model,
     chatRange: userPreferences.chatRange,
@@ -111,8 +109,7 @@ backup.get("/json", (c) => {
     removedMap[row.field as PainMultiField] = mergeOptions(removedMap[row.field as PainMultiField], [row.value]);
   }
 
-  return c.json({
-    data: {
+  return {
       ...loadJournalBackup(db, userId),
       diary: { ...result.diary, moodOptions: loadMoodOptionsForUser(db, userId) },
       pain: {
@@ -132,184 +129,193 @@ backup.get("/json", (c) => {
           catch (err) { console.error("Failed to parse graphSelectionJson:", err); return {}; }
         })(),
       }
-    }
-  });
-});
+  };
+}
 
-// JSON import and XLSX routes use rawDb for transactions (bulk ops with prepared statements)
-backup.post("/json/import", limitUploadSize, async (c) => {
-  const db = c.get("db");
-  const rawDb = c.get("rawDb");
-  const userId = c.get("userId");
-  const body = await parseJson(c, backupImportSchema);
+backup.get("/json", (c) => c.json({ data: buildHealthJson(c.get("db"), c.get("userId")) }));
 
+/**
+ * Replaces the user's Health data with a backup. Call inside a transaction;
+ * throws ImportRowError for a row that cannot be stored.
+ */
+export function importHealthJson(db: DrizzleDB, rawDb: SQLiteDB, userId: number, body: BackupImport): void {
   const parsedPrefs = body.prefs ?? null;
+  rawDb.query(`DELETE FROM pain_entries WHERE user_id = ?`).run(userId);
+  rawDb.query(`DELETE FROM diary_entries WHERE user_id = ?`).run(userId);
 
-  const tx = rawDb.transaction(() => {
-    rawDb.query(`DELETE FROM pain_entries WHERE user_id = ?`).run(userId);
-    rawDb.query(`DELETE FROM diary_entries WHERE user_id = ?`).run(userId);
-
-    if (body.diary?.rows) {
-      const insertDiary = rawDb.query(
-        `INSERT INTO diary_entries (user_id, entry_date, entry_time, mood_level, depression_level, anxiety_level, positive_moods, negative_moods, general_moods, description, gratitude, reflection)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  if (body.diary?.rows) {
+    const insertDiary = rawDb.query(
+      `INSERT INTO diary_entries (user_id, entry_date, entry_time, mood_level, depression_level, anxiety_level, positive_moods, negative_moods, general_moods, description, gratitude, reflection)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    body.diary.rows.forEach((row, index) => {
+      const { entryDate, entryTime } = importedDateTime("diary", index, row.date ?? row.entryDate, row.hour ?? row.entryTime ?? "00:00");
+      insertDiary.run(
+        userId,
+        entryDate,
+        entryTime,
+        toNullableNumber(row["mood level"] ?? row.moodLevel),
+        toNullableNumber(row.depression ?? row.depressionLevel),
+        toNullableNumber(row.anxiety ?? row.anxietyLevel),
+        String(row["positive moods"] ?? row.positiveMoods ?? ""),
+        String(row["negative moods"] ?? row.negativeMoods ?? ""),
+        String(row["general moods"] ?? row.generalMoods ?? ""),
+        String(row.description ?? ""),
+        String(row.gratitude ?? ""),
+        String(row.reflection ?? "")
       );
-      body.diary.rows.forEach((row, index) => {
-        const { entryDate, entryTime } = importedDateTime("diary", index, row.date ?? row.entryDate, row.hour ?? row.entryTime ?? "00:00");
-        insertDiary.run(
-          userId,
-          entryDate,
-          entryTime,
-          toNullableNumber(row["mood level"] ?? row.moodLevel),
-          toNullableNumber(row.depression ?? row.depressionLevel),
-          toNullableNumber(row.anxiety ?? row.anxietyLevel),
-          String(row["positive moods"] ?? row.positiveMoods ?? ""),
-          String(row["negative moods"] ?? row.negativeMoods ?? ""),
-          String(row["general moods"] ?? row.generalMoods ?? ""),
-          String(row.description ?? ""),
-          String(row.gratitude ?? ""),
-          String(row.reflection ?? "")
-        );
-      });
-    }
+    });
+  }
 
-    if (body.pain?.rows) {
-      const insertPain = rawDb.query(
-        `INSERT INTO pain_entries (user_id, entry_date, entry_time, pain_level, fatigue_level, coffee_count, area, symptoms, activities, medicines, habits, other, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  if (body.pain?.rows) {
+    const insertPain = rawDb.query(
+      `INSERT INTO pain_entries (user_id, entry_date, entry_time, pain_level, fatigue_level, coffee_count, area, symptoms, activities, medicines, habits, other, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    body.pain.rows.forEach((row, index) => {
+      const { entryDate, entryTime } = importedDateTime("pain", index, row.date ?? row.entryDate, row.hour ?? row.entryTime ?? "00:00");
+      insertPain.run(
+        userId,
+        entryDate,
+        entryTime,
+        toNullableInt(row["pain level"] ?? row.painLevel),
+        toNullableInt(row["fatigue level"] ?? row.fatigueLevel),
+        toNullableInt(row.coffee ?? row.coffeeCount),
+        rowPainField(row, "area"),
+        rowPainField(row, "symptoms"),
+        rowPainField(row, "activities"),
+        rowPainField(row, "medicines"),
+        rowPainField(row, "habits"),
+        rowPainField(row, "other"),
+        String(row.note ?? "")
       );
-      body.pain.rows.forEach((row, index) => {
-        const { entryDate, entryTime } = importedDateTime("pain", index, row.date ?? row.entryDate, row.hour ?? row.entryTime ?? "00:00");
-        insertPain.run(
-          userId,
-          entryDate,
-          entryTime,
-          toNullableInt(row["pain level"] ?? row.painLevel),
-          toNullableInt(row["fatigue level"] ?? row.fatigueLevel),
-          toNullableInt(row.coffee ?? row.coffeeCount),
-          rowPainField(row, "area"),
-          rowPainField(row, "symptoms"),
-          rowPainField(row, "activities"),
-          rowPainField(row, "medicines"),
-          rowPainField(row, "habits"),
-          rowPainField(row, "other"),
-          String(row.note ?? "")
-        );
-      });
-    }
+    });
+  }
 
-    rawDb.query(`DELETE FROM pain_removed_options WHERE user_id = ?`).run(userId);
-    const removed = body.pain?.options?.removed;
-    if (removed && typeof removed === "object") {
-      const insertRemoved = rawDb.query(
-        `INSERT INTO pain_removed_options (user_id, field, value)
-         VALUES (?, ?, ?)
-         ON CONFLICT(user_id, field, value) DO NOTHING`
-      );
-      for (const field of PAIN_MULTI_FIELDS) {
-        const values = (removed as Record<string, unknown>)[field];
-        if (!Array.isArray(values)) continue;
-        for (const raw of values) {
-          const normalized = String(raw).trim();
-          if (!normalized) continue;
-          insertRemoved.run(userId, field, normalized);
-        }
+  rawDb.query(`DELETE FROM pain_removed_options WHERE user_id = ?`).run(userId);
+  const removed = body.pain?.options?.removed;
+  if (removed && typeof removed === "object") {
+    const insertRemoved = rawDb.query(
+      `INSERT INTO pain_removed_options (user_id, field, value)
+       VALUES (?, ?, ?)
+       ON CONFLICT(user_id, field, value) DO NOTHING`
+    );
+    for (const field of PAIN_MULTI_FIELDS) {
+      const values = (removed as Record<string, unknown>)[field];
+      if (!Array.isArray(values)) continue;
+      for (const raw of values) {
+        const normalized = String(raw).trim();
+        if (!normalized) continue;
+        insertRemoved.run(userId, field, normalized);
       }
     }
+  }
 
-    // Restore the pain options list and medicine preselection. Guarded on the
-    // options block being present so legacy backups (which omit it) leave the
-    // user's existing options untouched. When preselectedMedicines is absent
-    // (pre-feature backups), medicines default to preselected (column default).
-    const importedOptions = body.pain?.options?.options;
-    if (importedOptions && typeof importedOptions === "object") {
-      rawDb.query(`DELETE FROM pain_options WHERE user_id = ?`).run(userId);
-      const rawPreselected = body.pain?.options?.preselectedMedicines;
-      const preselectedSet = Array.isArray(rawPreselected)
-        ? new Set(rawPreselected.map((v) => String(v).trim()))
-        : null;
-      const insertOption = rawDb.query(
-        `INSERT INTO pain_options (user_id, field, value, preselected)
-         VALUES (?, ?, ?, ?)
-         ON CONFLICT(user_id, field, value) DO NOTHING`
-      );
-      for (const field of PAIN_MULTI_FIELDS) {
-        const values = (importedOptions as Record<string, unknown>)[field];
-        if (!Array.isArray(values)) continue;
-        for (const raw of values) {
-          const normalized = String(raw).trim();
-          if (!normalized) continue;
-          const preselected = field === "medicines" && preselectedSet ? (preselectedSet.has(normalized) ? 1 : 0) : 1;
-          insertOption.run(userId, field, normalized, preselected);
-        }
+  // Restore the pain options list and medicine preselection. Guarded on the
+  // options block being present so legacy backups (which omit it) leave the
+  // user's existing options untouched. When preselectedMedicines is absent
+  // (pre-feature backups), medicines default to preselected (column default).
+  const importedOptions = body.pain?.options?.options;
+  if (importedOptions && typeof importedOptions === "object") {
+    rawDb.query(`DELETE FROM pain_options WHERE user_id = ?`).run(userId);
+    const rawPreselected = body.pain?.options?.preselectedMedicines;
+    const preselectedSet = Array.isArray(rawPreselected)
+      ? new Set(rawPreselected.map((v) => String(v).trim()))
+      : null;
+    const insertOption = rawDb.query(
+      `INSERT INTO pain_options (user_id, field, value, preselected)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_id, field, value) DO NOTHING`
+    );
+    for (const field of PAIN_MULTI_FIELDS) {
+      const values = (importedOptions as Record<string, unknown>)[field];
+      if (!Array.isArray(values)) continue;
+      for (const raw of values) {
+        const normalized = String(raw).trim();
+        if (!normalized) continue;
+        const preselected = field === "medicines" && preselectedSet ? (preselectedSet.has(normalized) ? 1 : 0) : 1;
+        insertOption.run(userId, field, normalized, preselected);
       }
     }
+  }
 
-    // The export carries diary.moodOptions; the same presence guard as the
-    // pain options above keeps legacy backups from emptying the list.
-    const importedMoodOptions = body.diary?.moodOptions;
-    if (importedMoodOptions) {
-      rawDb.query(`DELETE FROM mood_options WHERE user_id = ?`).run(userId);
-      const insertMoodOption = rawDb.query(
-        `INSERT INTO mood_options (user_id, field, value)
-         VALUES (?, ?, ?)
-         ON CONFLICT(user_id, field, value) DO NOTHING`
-      );
-      for (const field of MOOD_MULTI_FIELDS) {
-        for (const raw of importedMoodOptions[field] ?? []) {
-          const normalized = raw.trim();
-          if (!normalized) continue;
-          insertMoodOption.run(userId, field, normalized);
-        }
+  // The export carries diary.moodOptions; the same presence guard as the
+  // pain options above keeps legacy backups from emptying the list.
+  const importedMoodOptions = body.diary?.moodOptions;
+  if (importedMoodOptions) {
+    rawDb.query(`DELETE FROM mood_options WHERE user_id = ?`).run(userId);
+    const insertMoodOption = rawDb.query(
+      `INSERT INTO mood_options (user_id, field, value)
+       VALUES (?, ?, ?)
+       ON CONFLICT(user_id, field, value) DO NOTHING`
+    );
+    for (const field of MOOD_MULTI_FIELDS) {
+      for (const raw of importedMoodOptions[field] ?? []) {
+        const normalized = raw.trim();
+        if (!normalized) continue;
+        insertMoodOption.run(userId, field, normalized);
       }
     }
+  }
 
-    // Each section is replaced only when the backup carries it, so a backup
-    // made before these sections existed leaves them untouched.
-    if (body.cbt) {
-      db.delete(cbtEntries).where(eq(cbtEntries.userId, userId)).run();
-      for (const row of body.cbt) db.insert(cbtEntries).values({ ...row, userId }).run();
-    }
-    if (body.dbt) {
-      db.delete(dbtEntries).where(eq(dbtEntries.userId, userId)).run();
-      for (const row of body.dbt) db.insert(dbtEntries).values({ ...row, userId }).run();
-    }
-    if (body.memorableDays) {
-      db.delete(memorableDays).where(eq(memorableDays.userId, userId)).run();
-      for (const row of body.memorableDays) db.insert(memorableDays).values({ ...row, userId }).run();
-    }
+  // Each section is replaced only when the backup carries it, so a backup
+  // made before these sections existed leaves them untouched.
+  if (body.cbt) {
+    db.delete(cbtEntries).where(eq(cbtEntries.userId, userId)).run();
+    for (const row of body.cbt) db.insert(cbtEntries).values({ ...row, userId }).run();
+  }
+  if (body.dbt) {
+    db.delete(dbtEntries).where(eq(dbtEntries.userId, userId)).run();
+    for (const row of body.dbt) db.insert(dbtEntries).values({ ...row, userId }).run();
+  }
+  if (body.memorableDays) {
+    db.delete(memorableDays).where(eq(memorableDays.userId, userId)).run();
+    for (const row of body.memorableDays) db.insert(memorableDays).values({ ...row, userId }).run();
+  }
 
-    if (parsedPrefs) {
-      const pref = parsedPrefs;
-      rawDb.query(
-        `INSERT INTO user_preferences (user_id, model, chat_range, last_range, graph_selection_json, updated_at)
-         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(user_id) DO UPDATE SET
-          model=excluded.model,
-          chat_range=excluded.chat_range,
-          last_range=excluded.last_range,
-          graph_selection_json=excluded.graph_selection_json,
-          updated_at=CURRENT_TIMESTAMP`
-      ).run(userId, pref.model, pref.chatRange, pref.lastRange, JSON.stringify(pref.graphSelection ?? {}));
-    }
-  });
+  if (parsedPrefs) {
+    const pref = parsedPrefs;
+    rawDb.query(
+      `INSERT INTO user_preferences (user_id, model, chat_range, last_range, graph_selection_json, updated_at)
+       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(user_id) DO UPDATE SET
+        model=excluded.model,
+        chat_range=excluded.chat_range,
+        last_range=excluded.last_range,
+        graph_selection_json=excluded.graph_selection_json,
+        updated_at=CURRENT_TIMESTAMP`
+    ).run(userId, pref.model, pref.chatRange, pref.lastRange, JSON.stringify(pref.graphSelection ?? {}));
+  }
+}
 
+const JSON_IMPORT_FAILED = "Import failed: invalid or incompatible backup data";
+export const XLSX_IMPORT_FAILED = "Import failed: invalid or incompatible XLSX data";
+
+/** Runs an import transaction; a bad backup file is answered with 422, not 500. */
+export function runHealthImport(c: Context<Env>, tx: () => void, fallbackMessage: string): Response | null {
   try {
     tx();
   } catch (e) {
     if (e instanceof ImportRowError) {
       return c.json({ error: { code: "IMPORT_FAILED", message: `Import failed: ${e.message}` } }, 422);
     }
-    console.error("JSON import transaction failed:", e);
-    return c.json({ error: { code: "IMPORT_FAILED", message: "Import failed: invalid or incompatible backup data" } }, 422);
+    console.error("Health import transaction failed:", e);
+    return c.json({ error: { code: "IMPORT_FAILED", message: fallbackMessage } }, 422);
   }
-  return c.json({ data: { ok: true } });
+  return null;
+}
+
+// JSON import and XLSX routes use rawDb for transactions (bulk ops with prepared statements)
+backup.post("/json/import", limitUploadSize, async (c) => {
+  const rawDb = c.get("rawDb");
+  const body = await parseJson(c, backupImportSchema);
+  const tx = rawDb.transaction(() => importHealthJson(c.get("db"), rawDb, c.get("userId"), body));
+  return runHealthImport(c, tx, JSON_IMPORT_FAILED) ?? c.json({ data: { ok: true } });
 });
 
-backup.get("/xlsx", async (c) => {
-  const result = loadHealthBackup(c.get("db"), c.get("userId"));
-  const workbook = new ExcelJS.Workbook();
-
+/** Adds the "diary" and "pain" sheets. */
+export function addHealthSheets(workbook: ExcelJS.Workbook, db: DrizzleDB, userId: number): void {
+  const result = loadHealthBackup(db, userId);
   const diarySheet = workbook.addWorksheet("diary");
   diarySheet.columns = result.diary.headers.map((h: string) => ({ header: h, key: h }));
   for (const row of result.diary.rows) diarySheet.addRow(row);
@@ -317,7 +323,11 @@ backup.get("/xlsx", async (c) => {
   const painSheet = workbook.addWorksheet("pain");
   painSheet.columns = result.pain.headers.map((h: string) => ({ header: h, key: h }));
   for (const row of result.pain.rows) painSheet.addRow(row);
+}
 
+backup.get("/xlsx", async (c) => {
+  const workbook = new ExcelJS.Workbook();
+  addHealthSheets(workbook, c.get("db"), c.get("userId"));
   const buffer = await workbook.xlsx.writeBuffer();
   return new Response(buffer, {
     status: 200,
@@ -416,75 +426,79 @@ backup.post("/xlsx/import", limitUploadSize, async (c) => {
     }
   }
 
+  const sheets = readHealthSheets(workbook);
+  if (!sheets) {
+    return c.json({ error: { code: "FILE_TOO_LARGE", message: "Import exceeds row limit (50 000 per sheet)" } }, 413);
+  }
+  const tx = rawDb.transaction(() => importHealthSheets(rawDb, userId, sheets));
+  return (
+    runHealthImport(c, tx, XLSX_IMPORT_FAILED) ??
+    c.json({ data: { ok: true, imported: { diaryRows: sheets.diaryRows.length, painRows: sheets.painRows.length } } })
+  );
+});
+
+export type HealthSheets = { diaryRows: Record<string, unknown>[]; painRows: Record<string, unknown>[] };
+
+/** The rows of the "diary" and "pain" sheets; null when either is over the row limit. */
+export function readHealthSheets(workbook: ExcelJS.Workbook): HealthSheets | null {
   const diaryRows = sheetToObjects(workbook.getWorksheet("diary"));
   const painRows = sheetToObjects(workbook.getWorksheet("pain"));
   // Same row cap the JSON import enforces through its schema: a 10 MB
   // spreadsheet compresses far more rows than that into one transaction.
-  if (diaryRows.length > BACKUP_MAX_ROWS || painRows.length > BACKUP_MAX_ROWS) {
-    return c.json({ error: { code: "FILE_TOO_LARGE", message: "Import exceeds row limit (50 000 per sheet)" } }, 413);
-  }
+  if (diaryRows.length > BACKUP_MAX_ROWS || painRows.length > BACKUP_MAX_ROWS) return null;
+  return { diaryRows, painRows };
+}
 
-  const tx = rawDb.transaction(() => {
-    rawDb.query(`DELETE FROM pain_entries WHERE user_id = ?`).run(userId);
-    rawDb.query(`DELETE FROM diary_entries WHERE user_id = ?`).run(userId);
+/** Replaces diary and pain entries with the sheets' rows. Call inside a transaction. */
+export function importHealthSheets(rawDb: SQLiteDB, userId: number, { diaryRows, painRows }: HealthSheets): void {
+  rawDb.query(`DELETE FROM pain_entries WHERE user_id = ?`).run(userId);
+  rawDb.query(`DELETE FROM diary_entries WHERE user_id = ?`).run(userId);
 
-    const insertDiary = rawDb.query(
-      `INSERT INTO diary_entries (user_id, entry_date, entry_time, mood_level, depression_level, anxiety_level, description, gratitude, reflection, positive_moods, negative_moods, general_moods)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  const insertDiary = rawDb.query(
+    `INSERT INTO diary_entries (user_id, entry_date, entry_time, mood_level, depression_level, anxiety_level, description, gratitude, reflection, positive_moods, negative_moods, general_moods)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+  diaryRows.forEach((row, index) => {
+    const { entryDate, entryTime } = importedDateTime("diary", index, row.date, row.hour ?? "00:00");
+    insertDiary.run(
+      userId,
+      entryDate,
+      entryTime,
+      toNullableNumber(row["mood level"]),
+      toNullableNumber(row.depression),
+      toNullableNumber(row.anxiety),
+      String(row.description ?? ""),
+      String(row.gratitude ?? ""),
+      String(row.reflection ?? ""),
+      String(row["positive moods"] ?? row.positive_moods ?? ""),
+      String(row["negative moods"] ?? row.negative_moods ?? ""),
+      String(row["general moods"] ?? row.general_moods ?? "")
     );
-    diaryRows.forEach((row, index) => {
-      const { entryDate, entryTime } = importedDateTime("diary", index, row.date, row.hour ?? "00:00");
-      insertDiary.run(
-        userId,
-        entryDate,
-        entryTime,
-        toNullableNumber(row["mood level"]),
-        toNullableNumber(row.depression),
-        toNullableNumber(row.anxiety),
-        String(row.description ?? ""),
-        String(row.gratitude ?? ""),
-        String(row.reflection ?? ""),
-        String(row["positive moods"] ?? row.positive_moods ?? ""),
-        String(row["negative moods"] ?? row.negative_moods ?? ""),
-        String(row["general moods"] ?? row.general_moods ?? "")
-      );
-    });
-
-    const insertPain = rawDb.query(
-      `INSERT INTO pain_entries (user_id, entry_date, entry_time, pain_level, fatigue_level, coffee_count, area, symptoms, activities, medicines, habits, other, note)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    );
-    painRows.forEach((row, index) => {
-      const { entryDate, entryTime } = importedDateTime("pain", index, row.date, row.hour ?? "00:00");
-      insertPain.run(
-        userId,
-        entryDate,
-        entryTime,
-        toNullableInt(row["pain level"]),
-        toNullableInt(row["fatigue level"]),
-        toNullableInt(row.coffee),
-        rowPainField(row, "area"),
-        rowPainField(row, "symptoms"),
-        rowPainField(row, "activities"),
-        rowPainField(row, "medicines"),
-        rowPainField(row, "habits"),
-        rowPainField(row, "other"),
-        String(row.note ?? "")
-      );
-    });
   });
 
-  try {
-    tx();
-  } catch (e) {
-    if (e instanceof ImportRowError) {
-      return c.json({ error: { code: "IMPORT_FAILED", message: `Import failed: ${e.message}` } }, 422);
-    }
-    console.error("XLSX import transaction failed:", e);
-    return c.json({ error: { code: "IMPORT_FAILED", message: "Import failed: invalid or incompatible XLSX data" } }, 422);
-  }
-  return c.json({ data: { ok: true, imported: { diaryRows: diaryRows.length, painRows: painRows.length } } });
-});
+  const insertPain = rawDb.query(
+    `INSERT INTO pain_entries (user_id, entry_date, entry_time, pain_level, fatigue_level, coffee_count, area, symptoms, activities, medicines, habits, other, note)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+  painRows.forEach((row, index) => {
+    const { entryDate, entryTime } = importedDateTime("pain", index, row.date, row.hour ?? "00:00");
+    insertPain.run(
+      userId,
+      entryDate,
+      entryTime,
+      toNullableInt(row["pain level"]),
+      toNullableInt(row["fatigue level"]),
+      toNullableInt(row.coffee),
+      rowPainField(row, "area"),
+      rowPainField(row, "symptoms"),
+      rowPainField(row, "activities"),
+      rowPainField(row, "medicines"),
+      rowPainField(row, "habits"),
+      rowPainField(row, "other"),
+      String(row.note ?? "")
+    );
+  });
+}
 
 backup.post("/purge", async (c) => {
   const rawDb = c.get("rawDb");

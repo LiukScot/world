@@ -237,7 +237,7 @@ export type DbtFormValues = z.infer<typeof dbtFormSchema>;
 export const navItems = [
   "dashboard", "memorable-days", "diary", "pain", "cbt", "dbt",
   "money-dashboard", "money-transactions", "money-movements", "money-snapshots",
-  "settings-account", "settings-appearance", "settings-health", "settings-money", "settings-design-system",
+  "settings-account", "settings-appearance", "settings-health", "settings-money", "settings-data", "settings-design-system",
 ] as const;
 export type NavItem = (typeof navItems)[number];
 
@@ -256,6 +256,7 @@ export const navLabels: Record<NavItem, string> = {
   "settings-appearance": "Appearance",
   "settings-health": "Health",
   "settings-money": "Money",
+  "settings-data": "Data",
   "settings-design-system": "Design System",
 };
 
@@ -300,7 +301,7 @@ export const realmLabels: Record<Realm, string> = { health: "Health", money: "Mo
 export const navItemsByRealm: Record<Realm, NavItem[]> = {
   health: ["dashboard", "pain", "diary", "cbt", "dbt", "memorable-days"],
   money: ["money-dashboard", "money-transactions", "money-movements", "money-snapshots"],
-  settings: ["settings-account", "settings-appearance", "settings-health", "settings-money", "settings-design-system"],
+  settings: ["settings-account", "settings-appearance", "settings-health", "settings-money", "settings-data", "settings-design-system"],
 };
 
 // Health owns the unprefixed items because it was here first; every realm

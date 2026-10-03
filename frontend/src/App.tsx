@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 import {
   useAuth, useDiary, usePain, useCbt, useDbt, useDashboard, useMemorableDays,
-  useMoneyDashboard, useMoneyMovements, useMoneySettings, useMoneySnapshots, useMoneyTransactions, useSettings,
+  useMoneyDashboard, useMoneyMovements, useMoneySettings, useMoneySnapshots, useMoneyTransactions, useSettings, useAutoBackup,
 } from "./hooks";
 import { LoginScreen } from "./app/LoginScreen";
 import { Sidebar } from "./app/Sidebar";
@@ -140,6 +140,7 @@ function App() {
   const dashboard = useDashboard(loggedIn);
   const memorable = useMemorableDays(loggedIn);
   const settings = useSettings();
+  useAutoBackup(loggedIn && import.meta.env.MODE === "device");
   // Only fetched once you're actually in the Money realm — the health realm
   // has no use for it and shouldn't pay for the request.
   const moneyTx = useMoneyTransactions(loggedIn && realm === "money");
@@ -505,9 +506,7 @@ function App() {
             purgeConfirmArmed={settings.purgeConfirmArmed}
             purgePending={settings.purgePending} purgeError={settings.purgeError}
             onPurgeArm={settings.onPurgeArm} onPurgeConfirm={settings.onPurgeConfirm}
-            onPurgeCancel={settings.onPurgeCancel} onExportJson={settings.onExportJson}
-            onImportJson={settings.onImportJson} onExportXlsx={settings.onExportXlsx}
-            onImportXlsx={settings.onImportXlsx}
+            onPurgeCancel={settings.onPurgeCancel}
           />
         )}
 

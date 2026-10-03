@@ -116,7 +116,7 @@ bun run backup          # creates a backup of the DB
 bun run restore         # restores from a backup file
 ```
 
-You can also export and import data as JSON or Excel from within the app itself (Settings → Backup).
+You can also export and import all data, Health and Money together, as one JSON or Excel file from the app (Settings → Data). An import replaces the data the file contains. Files exported before this single backup, one per realm, still import.
 
 ---
 
@@ -137,9 +137,23 @@ its data.
 
 **Back up.** The database is `Library/world.sqlite` inside the app, so it is
 part of the phone's iCloud or computer backup. To keep a copy you can restore
-anywhere, open Settings → Backup in each realm (Health and Money) and export
-JSON; the share sheet lets you save it to Files or send it elsewhere.
+anywhere, open Settings → Data and export JSON; the share sheet lets you save
+it to Files or send it elsewhere.
+
+**Daily backup to WebDAV.** In Settings → Data, enter the WebDAV server
+address (for Nextcloud: `https://<host>/remote.php/dav/files/<user>`), a
+folder, username and password, turn on "Back up every day" and press Save.
+"Back up now" uploads at once and shows any error. iOS does not run apps on a
+timer, so the daily backup runs when you open the app and the last one is more
+than a day old. Each backup is the whole database, named
+`world-YYYY-MM-DD.sqlite`; the folder keeps the newest 30. The password is
+stored in the iPhone Keychain and is not part of the backup.
+
+**Restore from WebDAV.** On a new install, enter the same WebDAV settings in
+Settings → Data, press Save, then "Show backups" and restore one. It replaces
+all data on the phone, including the WebDAV settings; enter the password again
+afterwards if the phone is new.
 
 **Move data from the server.** On the server, export JSON from Settings →
-Backup in each realm. On the phone, import each file from the same screen.
-An import replaces that realm's data on the phone.
+Data. On the phone, import the file from the same screen. An import replaces
+the phone's data for both realms.

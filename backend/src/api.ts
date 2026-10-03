@@ -15,6 +15,7 @@ import moneySnapshots from "./routes/money-snapshots.ts";
 import moneyStyles from "./routes/money-styles.ts";
 import moneyPrefs from "./routes/money-prefs.ts";
 import moneyBackup from "./routes/money-backup.ts";
+import fullBackup from "./routes/full-backup.ts";
 
 /**
  * Mounts every data route. Imports nothing from Bun or Node, so it can run
@@ -41,4 +42,7 @@ export function mountApiRoutes(app: Hono<AppEnv>): void {
   app.route("/api/v1/money/preferences", moneyPrefs);
   app.route("/api/v1/money/backup", moneyBackup);
   app.route("/api/v1/money/data", moneyBackup);
+
+  // Both realms in one file.
+  app.route("/api/v1/full-backup", fullBackup);
 }

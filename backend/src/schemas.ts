@@ -120,6 +120,18 @@ export const prefsSchema = z.object({
   graphSelection: z.record(z.string(), z.unknown()).default({}),
 });
 
+export const webdavSettingsSchema = z.object({
+  url: z.union([z.literal(""), z.string().trim().max(500).url().refine((v) => /^https?:\/\//i.test(v), "http or https only")]),
+  folder: z.string().trim().max(200).regex(/^[^?#]*$/),
+  username: z.string().trim().max(200),
+  enabled: z.boolean(),
+}).refine((v) => !v.enabled || v.url !== "", "A URL is required to turn the backup on");
+
+export const webdavResultSchema = z.object({
+  ok: z.boolean(),
+  error: z.string().max(500).optional(),
+});
+
 export const memorableDaySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(isoDateRefine, {
     message: "Invalid date: must be a valid calendar date in YYYY-MM-DD format"
@@ -155,6 +167,8 @@ export const backupImportSchema = z.object({
   memorableDays: z.array(memorableDaySchema).max(BACKUP_MAX_ROWS).optional(),
   prefs: prefsSchema.optional()
 });
+export type BackupImport = z.infer<typeof backupImportSchema>;
+
 
 export const optionFieldSchema = z.object({
   field: z.string(),
@@ -248,3 +262,5 @@ export const moneyBackupImportSchema = z.object({
   assetRisks: z.record(z.string().min(1).max(120), z.enum(["low", "medium", "high"])).optional(),
   preferences: looseRow.optional()
 });
+export type MoneyBackupImport = z.infer<typeof moneyBackupImportSchema>;
+
