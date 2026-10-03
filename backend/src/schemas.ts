@@ -150,6 +150,9 @@ export const backupImportSchema = z.object({
         .optional()
     })
     .optional(),
+  cbt: z.array(cbtSchema).max(BACKUP_MAX_ROWS).optional(),
+  dbt: z.array(dbtSchema).max(BACKUP_MAX_ROWS).optional(),
+  memorableDays: z.array(memorableDaySchema).max(BACKUP_MAX_ROWS).optional(),
   prefs: prefsSchema.optional()
 });
 

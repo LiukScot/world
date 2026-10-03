@@ -4,6 +4,7 @@ import initSqlJs from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { createLocalApp } from "world-local-backend";
 import { setTransport } from "./transport";
+import { toBase64 } from "./save-file";
 
 const FILE = "world.sqlite";
 
@@ -11,14 +12,6 @@ type Storage = {
   load(): Promise<Uint8Array | null>;
   save(bytes: Uint8Array): Promise<void>;
 };
-
-function toBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
-}
 
 function fromBase64(text: string): Uint8Array {
   const binary = atob(text);

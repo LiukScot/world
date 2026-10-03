@@ -4,6 +4,9 @@ import backupRoute from "./backup.ts";
 import diaryRoute from "./diary.ts";
 import painRoute from "./pain.ts";
 import moodRoute from "./mood.ts";
+import cbtRoute from "./cbt.ts";
+import dbtRoute from "./dbt.ts";
+import memorableDaysRoute from "./memorable-days.ts";
 import { extractSessionCookie, seedUser, setupAuthedApp } from "../test-helpers.ts";
 import type { SQLiteDB } from "../db.ts";
 
@@ -15,6 +18,9 @@ async function setup() {
     { path: "/diary", route: diaryRoute },
     { path: "/pain", route: painRoute },
     { path: "/mood", route: moodRoute },
+    { path: "/cbt", route: cbtRoute },
+    { path: "/dbt", route: dbtRoute },
+    { path: "/memorable-days", route: memorableDaysRoute },
   ]);
   return { ctx: s.ctx, app: s.app, cookie: s.cookie, userId: s.user.id };
 }
@@ -145,6 +151,57 @@ describe("POST /backup/json/import", () => {
     expect(res.status).toBe(200);
     const list = await (await app.request("/diary", { headers: { cookie } })).json();
     expect(list.data).toEqual([]);
+  });
+});
+
+describe("backup of CBT, DBT and memorable days", () => {
+  const cbt = { entryDate: "2026-05-16", entryTime: "10:00", intensity: 6, situation: "meeting", productiveResponse: "breathe" };
+  const dbt = { entryDate: "2026-05-17", entryTime: "11:00", intensity: 4, emotionName: "fear", bodyLocation: "chest" };
+  const day = { date: "2026-05-18", title: "Graduation", emoji: "🎓", description: "done" };
+
+  async function send(app: Awaited<ReturnType<typeof setup>>["app"], cookie: string, path: string, body: unknown) {
+    return app.request(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify(body),
+    });
+  }
+
+  test("export restores them into another account", async () => {
+    const source = await setup();
+    await send(source.app, source.cookie, "/cbt", cbt);
+    await send(source.app, source.cookie, "/dbt", dbt);
+    await send(source.app, source.cookie, "/memorable-days", day);
+    const dump = (await (await source.app.request("/backup/json", { headers: { cookie: source.cookie } })).json()).data;
+    expect(dump.cbt).toHaveLength(1);
+    expect(dump.dbt).toHaveLength(1);
+    expect(dump.memorableDays).toHaveLength(1);
+
+    const target = await setup();
+    expect((await send(target.app, target.cookie, "/backup/json/import", dump)).status).toBe(200);
+    const restored = (await (await target.app.request("/backup/json", { headers: { cookie: target.cookie } })).json()).data;
+    expect(restored.cbt).toEqual(dump.cbt);
+    expect(restored.dbt).toEqual(dump.dbt);
+    expect(restored.memorableDays).toEqual(dump.memorableDays);
+    expect(restored.cbt[0]).toMatchObject(cbt);
+    expect(restored.memorableDays[0]).toMatchObject(day);
+  });
+
+  test("a backup without these sections leaves them untouched", async () => {
+    const { app, cookie } = await setup();
+    await send(app, cookie, "/cbt", cbt);
+    expect((await send(app, cookie, "/backup/json/import", { diary: { rows: [] } })).status).toBe(200);
+    const list = await (await app.request("/cbt", { headers: { cookie } })).json();
+    expect(list.data).toHaveLength(1);
+  });
+
+  test("rejects an invalid entry and keeps the existing data", async () => {
+    const { app, cookie } = await setup();
+    await send(app, cookie, "/cbt", cbt);
+    const res = await send(app, cookie, "/backup/json/import", { cbt: [{ entryDate: "16/05/2026", entryTime: "10:00" }] });
+    expect(res.status).toBe(400);
+    const list = await (await app.request("/cbt", { headers: { cookie } })).json();
+    expect(list.data).toHaveLength(1);
   });
 });
 

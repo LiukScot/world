@@ -74,9 +74,12 @@ after a restart.
 
 Tracked in #242.
 
-- [ ] Replace the three blob downloads with file + share sheet.
-- [ ] Import the server's JSON export for both realms.
-- [ ] Document install, update and backup in the root `README.md`.
+- [x] Replace the four blob downloads with file + share sheet
+      (`frontend/src/save-file.ts`).
+- [x] Import the server's JSON export for both realms. The Health
+      export now also carries CBT, DBT and memorable days; a backup
+      without those sections leaves them untouched.
+- [x] Document install, update and backup in the root `README.md`.
 
 Check: an export made on the phone restores into a fresh install with
 the same entry counts.

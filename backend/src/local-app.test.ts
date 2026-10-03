@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import initSqlJs from "sql.js";
+import { Hono } from "hono";
 import { createLocalApp } from "./local-app.ts";
+import { mountApiRoutes } from "./api.ts";
+import type { AppEnv } from "./app-env.ts";
+import { createTestDb, seedUser } from "./test-helpers.ts";
 
 const SQL = await initSqlJs();
 
@@ -66,5 +70,84 @@ describe("local app on sql.js", () => {
     const app = createLocalApp(new SQL.Database());
     const res = await app.fetch(request("/api/v1/auth/login", { method: "POST" }));
     expect(res.status).toBe(404);
+  });
+});
+
+// The server runs the same routes on bun:sqlite; this builds it signed in.
+async function createServerApp(): Promise<{ fetch(request: Request): Promise<Response> }> {
+  const ctx = createTestDb();
+  const user = await seedUser(ctx.db);
+  const app = new Hono<AppEnv>();
+  app.use("/api/*", async (c, next) => {
+    c.set("db", ctx.db);
+    c.set("rawDb", ctx.rawDb);
+    c.set("userId", user.id);
+    c.set("userEmail", user.email);
+    await next();
+  });
+  mountApiRoutes(app);
+  return { fetch: async (req) => app.fetch(req) };
+}
+
+async function exportJson(app: { fetch(request: Request): Promise<Response> }, path: string): Promise<unknown> {
+  const res = await app.fetch(request(path));
+  expect(res.status).toBe(200);
+  return ((await res.json()) as { data: unknown }).data;
+}
+
+type Dump = Record<string, unknown>;
+
+async function seededServerExport(path: string): Promise<Dump> {
+  const server = await createServerApp();
+  await server.fetch(post("/api/v1/diary", diaryEntry));
+  await server.fetch(
+    post("/api/v1/pain", { entryDate: "2026-05-16", entryTime: "09:00", painLevel: 5, area: "back", note: "server pain" }),
+  );
+  await server.fetch(post("/api/v1/cbt", { entryDate: "2026-05-16", entryTime: "10:00", situation: "server cbt" }));
+  await server.fetch(post("/api/v1/dbt", { entryDate: "2026-05-16", entryTime: "11:00", emotionName: "server dbt" }));
+  await server.fetch(post("/api/v1/memorable-days", { date: "2026-05-18", title: "server day" }));
+  await server.fetch(
+    post("/api/v1/money/transactions", { txDate: "2026-02-01", asset: "ETF-A", tipo: "nuovo vincolo", buyValue: 500, pnl: 10 }),
+  );
+  return (await exportJson(server, path)) as Dump;
+}
+
+// Imports a dump into a new device, restarts it from the saved file, and
+// exports again.
+async function restoreOnDevice(path: string, dump: Dump): Promise<Dump> {
+  const device = createLocalApp(new SQL.Database());
+  const imported = await device.fetch(post(`${path}/import`, dump));
+  expect(imported.status).toBe(200);
+  const restarted = createLocalApp(new SQL.Database(device.exportDatabase()));
+  return (await exportJson(restarted, path)) as Dump;
+}
+
+describe("server export restores on the device", () => {
+  test("Health entries come back unchanged", async () => {
+    const path = "/api/v1/backup/json";
+    const fromServer = await seededServerExport(path);
+    const restored = await restoreOnDevice(path, fromServer);
+
+    const rows = (dump: Dump, sheet: string) => (dump[sheet] as { rows: unknown[] }).rows;
+    for (const sheet of ["diary", "pain"]) {
+      expect(rows(fromServer, sheet)).toHaveLength(1);
+      expect(rows(restored, sheet)).toEqual(rows(fromServer, sheet));
+    }
+    for (const section of ["cbt", "dbt", "memorableDays"]) {
+      expect(fromServer[section]).toHaveLength(1);
+      expect(restored[section]).toEqual(fromServer[section]);
+    }
+  });
+
+  test("Money transactions come back unchanged apart from their ids", async () => {
+    const path = "/api/v1/money/backup/json";
+    const fromServer = await seededServerExport(path);
+    const restored = await restoreOnDevice(path, fromServer);
+
+    // The import gives every transaction a new id.
+    const withoutIds = (dump: Dump) =>
+      (dump.transactions as Array<Record<string, unknown>>).map(({ id: _id, ...rest }) => rest);
+    expect(withoutIds(fromServer)).toHaveLength(1);
+    expect(withoutIds(restored)).toEqual(withoutIds(fromServer));
   });
 });

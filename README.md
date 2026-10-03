@@ -117,3 +117,29 @@ bun run restore         # restores from a backup file
 ```
 
 You can also export and import data as JSON or Excel from within the app itself (Settings → Backup).
+
+---
+
+## iOS app
+
+The iOS app holds its own data on the phone and needs no server or login.
+Design and status: [`docs/ios/`](docs/ios/README.md).
+
+**Install.** The `iOS` workflow uploads `World-unsigned.ipa` as an artifact. It
+runs on every pull request that changes `frontend/`, `backend/` or `ios/`; to
+build from `main`, start it from the Actions tab. Download the IPA from the
+workflow run, sign it with your app signer, and install the signed file on the
+phone.
+
+**Update.** Sign and install the newer IPA over the old app. Data is kept as
+long as the signer keeps the same bundle identifier. Deleting the app deletes
+its data.
+
+**Back up.** The database is `Library/world.sqlite` inside the app, so it is
+part of the phone's iCloud or computer backup. To keep a copy you can restore
+anywhere, open Settings → Backup in each realm (Health and Money) and export
+JSON; the share sheet lets you save it to Files or send it elsewhere.
+
+**Move data from the server.** On the server, export JSON from Settings →
+Backup in each realm. On the phone, import each file from the same screen.
+An import replaces that realm's data on the phone.
