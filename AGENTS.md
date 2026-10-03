@@ -242,8 +242,9 @@ flagged or rejected with a reference to the rule it breaks.
 - Every new test must run in CI. When repository settings permit it,
   add new correctness-gating jobs to the default branch's required
   status checks as part of the same change.
-- Share the link to an iOS IPA as soon as its build and artifact upload
-  job succeeds. Do not wait for unrelated PR checks. Keep monitoring the
+- Download the iOS IPA and send the `.ipa` file itself to the user, not
+  a link, as soon as its build and artifact upload job succeeds. Do not
+  wait for unrelated PR checks. Keep monitoring the
   other checks and do not call the PR ready before they pass.
 
 ## 14. Accessibility (frontend)
