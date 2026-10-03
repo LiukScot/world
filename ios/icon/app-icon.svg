@@ -11,6 +11,8 @@
     </linearGradient>
   </defs>
   <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- scaled about the centre to leave an empty margin inside the iOS mask -->
+  <g transform="translate(512 512) scale(0.82) translate(-512 -512)">
   <g clip-path="url(#clip)">
     <rect width="1024" height="1024" fill="#121214"/>
     <g transform="rotate(26 512 512)">
@@ -24,5 +26,6 @@
       <rect x="-200" y="767.5555555555557" width="1424" height="204.44444444444446" fill="#8f3f2b"/>
     </g>
     <circle cx="512" cy="512" r="360" fill="url(#shade)"/>
+  </g>
   </g>
 </svg>
