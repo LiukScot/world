@@ -26,7 +26,14 @@ export function parseBackupList(xml: string): string[] {
   if (doc.getElementsByTagName("parsererror").length > 0) throw new Error("The WebDAV server sent a folder listing that is not valid XML");
   const names = Array.from(doc.getElementsByTagNameNS("DAV:", "href"), (href) => {
     const path = (href.textContent ?? "").replace(/\/+$/, "");
-    return decodeURIComponent(path.slice(path.lastIndexOf("/") + 1));
+    const name = path.slice(path.lastIndexOf("/") + 1);
+    // A stray "%" in some other file's name must not break the listing; that
+    // name never matches a backup file anyway.
+    try {
+      return decodeURIComponent(name);
+    } catch {
+      return name;
+    }
   });
   return names.filter((name) => BACKUP_FILE.test(name)).sort().reverse();
 }

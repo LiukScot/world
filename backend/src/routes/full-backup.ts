@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import ExcelJS from "exceljs";
 import { z } from "zod";
 import { ImportRowError, parseJson } from "../helpers.ts";
@@ -26,6 +27,12 @@ const fullBackup = new Hono<Env>();
 
 fullBackup.use(requireAuth);
 
+// Each realm's own import allows 10 MB; one file now carries both.
+const limitJsonSize = bodyLimit({
+  maxSize: 20 * 1024 * 1024,
+  onError: (c) => c.json({ error: { code: "FILE_TOO_LARGE", message: "Import exceeds 20 MB limit" } }, 413),
+});
+
 const fullImportSchema = z
   .object({ health: backupImportSchema.optional(), money: moneyBackupImportSchema.optional() })
   .refine((v) => v.health || v.money, "The backup has neither a health nor a money section");
@@ -42,7 +49,7 @@ fullBackup.get("/json", (c) => {
   return c.json({ data: { health: buildHealthJson(db, userId), money: buildBackupPayload(db, userId) } });
 });
 
-fullBackup.post("/json/import", limitUploadSize, async (c) => {
+fullBackup.post("/json/import", limitJsonSize, async (c) => {
   const db = c.get("db");
   const rawDb = c.get("rawDb");
   const userId = c.get("userId");

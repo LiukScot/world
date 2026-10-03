@@ -51,4 +51,9 @@ describe("jsonImportPath", () => {
     expect(jsonImportPath({ transactions: [], assetColors: {} })).toBe("/api/v1/money/backup/json/import");
     expect(jsonImportPath({ diary: { rows: [] }, pain: { rows: [] } })).toBe("/api/v1/backup/json/import");
   });
+
+  test("refuses a file with no World section", () => {
+    expect(() => jsonImportPath({ foo: 1 })).toThrow("not a World backup");
+    expect(() => jsonImportPath([])).toThrow("not a World backup");
+  });
 });

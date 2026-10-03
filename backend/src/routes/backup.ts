@@ -289,10 +289,10 @@ export function importHealthJson(db: DrizzleDB, rawDb: SQLiteDB, userId: number,
 }
 
 const JSON_IMPORT_FAILED = "Import failed: invalid or incompatible backup data";
-export const XLSX_IMPORT_FAILED = "Import failed: invalid or incompatible XLSX data";
+const XLSX_IMPORT_FAILED = "Import failed: invalid or incompatible XLSX data";
 
 /** Runs an import transaction; a bad backup file is answered with 422, not 500. */
-export function runHealthImport(c: Context<Env>, tx: () => void, fallbackMessage: string): Response | null {
+function runHealthImport(c: Context<Env>, tx: () => void, fallbackMessage: string): Response | null {
   try {
     tx();
   } catch (e) {

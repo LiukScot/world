@@ -27,16 +27,16 @@ function datedName(extension: string): string {
 
 /**
  * Where a JSON backup is imported. Files made before the single backup hold
- * one realm at the top level: a Money file has its transaction arrays there,
- * anything else is a Health file.
+ * one realm at the top level. A file with none of the known sections is
+ * refused: the Health import would otherwise empty the diary and pain logs.
  */
 export function jsonImportPath(backup: unknown): string {
   const keys = backup && typeof backup === "object" ? Object.keys(backup) : [];
-  if (keys.includes("health") || keys.includes("money")) return "/api/v1/full-backup/json/import";
-  if (["transactions", "monthlyMovements", "monthlySnapshots"].some((key) => keys.includes(key))) {
-    return "/api/v1/money/backup/json/import";
-  }
-  return "/api/v1/backup/json/import";
+  const has = (names: string[]) => names.some((name) => keys.includes(name));
+  if (has(["health", "money"])) return "/api/v1/full-backup/json/import";
+  if (has(["transactions", "monthlyMovements", "monthlySnapshots"])) return "/api/v1/money/backup/json/import";
+  if (has(["diary", "pain", "cbt", "dbt", "memorableDays"])) return "/api/v1/backup/json/import";
+  throw new Error("This file is not a World backup");
 }
 
 /** Export and import of one backup file holding both Health and Money. */

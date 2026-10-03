@@ -31,7 +31,7 @@ moneyBackup.use(requireAuth);
  * health JSON import: a bad backup file is the client's problem, not a server
  * fault, and the two endpoints should be distinguishable the same way.
  */
-export function runImport(c: Context<Env>, tx: () => ImportCounts): Response {
+function runImport(c: Context<Env>, tx: () => ImportCounts): Response {
   let imported: ImportCounts;
   try {
     imported = tx();

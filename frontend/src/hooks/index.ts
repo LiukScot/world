@@ -12,4 +12,3 @@ export { useMoneySnapshots } from "./use-money-snapshots";
 export { useMoneySettings } from "./use-money-settings";
 export { useMoneyDashboard } from "./use-money-dashboard";
 export { useAutoBackup } from "./use-webdav-backup";
-export { useDataBackup } from "./use-data-backup";

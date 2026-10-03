@@ -67,7 +67,10 @@ async function runBackup(settings: WebdavSettings): Promise<void> {
   try {
     await uploadBackup(await targetFor(settings), (await localDatabase()).snapshot());
   } catch (error) {
-    await recordResult({ ok: false, error: getErrorMessage(error).slice(0, 500) });
+    // The upload error is what the user needs to see, even if recording it fails.
+    await recordResult({ ok: false, error: getErrorMessage(error).slice(0, 500) }).catch((recordError: unknown) =>
+      console.error("Could not record the failed backup:", recordError),
+    );
     throw error;
   }
   await recordResult({ ok: true });
@@ -121,17 +124,24 @@ export function useAutoBackup(enabled: boolean): void {
 
 export function useWebdavBackup(enabled: boolean) {
   const queryClient = useQueryClient();
-  const refresh = () =>
-    Promise.all([
+  // A list from the previous server or folder would offer files the new one lacks.
+  const refresh = () => {
+    listMutation.reset();
+    return Promise.all([
       queryClient.invalidateQueries({ queryKey: SETTINGS_KEY }),
       queryClient.invalidateQueries({ queryKey: PASSWORD_KEY }),
     ]);
+  };
 
   const settingsQuery = useQuery({ queryKey: SETTINGS_KEY, enabled, queryFn: fetchSettings });
   const passwordSavedQuery = useQuery({
     queryKey: PASSWORD_KEY,
     enabled,
     queryFn: async () => (await readPassword()) !== "",
+  });
+
+  const listMutation = useMutation({
+    mutationFn: async () => listBackups(await targetFor(await fetchSettings())),
   });
 
   const saveMutation = useMutation({
@@ -152,10 +162,6 @@ export function useWebdavBackup(enabled: boolean) {
     onSuccess: () => toast.success("Backup uploaded"),
     onError: (error) => toast.error(getErrorMessage(error)),
     onSettled: refresh,
-  });
-
-  const listMutation = useMutation({
-    mutationFn: async () => listBackups(await targetFor(await fetchSettings())),
   });
 
   // On success the page reloads with the restored database.

@@ -98,7 +98,18 @@ export async function startLocalBackend(): Promise<void> {
         }
         // Opening it as an app runs the migrations, which brings an older
         // backup up to this schema.
-        migrated = createLocalApp(candidate).exportDatabase();
+        const restored = createLocalApp(candidate);
+        // The restored data is itself a backup on the server. Recording that
+        // keeps the daily backup from running on the reload and overwriting
+        // today's file with this older copy.
+        await restored.fetch(
+          new Request(new URL("/api/v1/webdav-backup/result", location.origin), {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ ok: true }),
+          }),
+        );
+        migrated = restored.exportDatabase();
       } finally {
         candidate.close();
       }
