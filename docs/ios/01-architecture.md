@@ -38,7 +38,7 @@ Measured on `main`: `backend/src` is 4,947 lines without tests,
 | `backend/src/db.ts` migrations | logic as is | raw calls go through a small adapter (see below) |
 | `backend/src/app.ts` | API part | static file serving, dev proxy and `node:fs` move to the server entry |
 | `backend/src/routes/auth.ts` | server only | not mounted in the app |
-| `frontend/src` | as is | 5 `fetch` call sites, 3 file downloads, fonts |
+| `frontend/src` | as is | 5 `fetch` call sites, 4 file downloads, fonts |
 
 ## Backend inside the WebView
 
@@ -143,9 +143,10 @@ The server keeps its login unchanged.
 ## Frontend changes
 
 - **Transport**: the five `fetch` call sites described above.
-- **Downloads**: the three backup exports build a blob and click an
-  `<a download>`. WKWebView ignores that. In the app they write the
-  file with the Filesystem plugin and open the share sheet.
+- **Downloads**: the four backup exports go through `saveFile` in
+  `frontend/src/save-file.ts`. A browser gets an `<a download>`, which
+  WKWebView ignores; the app writes the file with the Filesystem plugin
+  and opens the share sheet.
 - **Fonts**: `index.html` loads Manrope from Google Fonts. Offline
   this fails. The font files are bundled in `frontend/public/`.
 - **Safe areas**: notch and home indicator need
@@ -156,9 +157,10 @@ The server keeps its login unchanged.
 
 ## Moving the existing data
 
-Settings → Backup already exports and imports JSON for both realms
+Settings → Backup exports and imports JSON for both realms
 (`/api/v1/backup/json`, `/api/v1/money/backup/json`). Export on the
-server, import in the app. No new code.
+server, import in the app. The Health export covers diary, pain, CBT,
+DBT and memorable days. Money transactions get new ids on import.
 
 ## Backup once the data is on the phone
 

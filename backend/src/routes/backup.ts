@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { eq, desc } from "drizzle-orm";
+import { asc, eq, desc } from "drizzle-orm";
 import ExcelJS from "exceljs";
 import type { DrizzleDB } from "../db/index.ts";
-import { diaryEntries, painEntries, userPreferences, painRemovedOptions } from "../db/index.ts";
+import { cbtEntries, dbtEntries, diaryEntries, memorableDays, painEntries, userPreferences, painRemovedOptions } from "../db/index.ts";
 import { toNullableInt, toNullableNumber } from "../db.ts";
 import {
   parseJson,
@@ -61,6 +61,33 @@ function loadHealthBackup(db: DrizzleDB, userId: number) {
   return rowsToHealthBackup(diaryForBackup, painForBackup);
 }
 
+// Oldest first with id as the tiebreaker, so an import, which inserts in array
+// order, exports again in the same order.
+function loadJournalBackup(db: DrizzleDB, userId: number) {
+  const cbt = db.select({
+    entryDate: cbtEntries.entryDate, entryTime: cbtEntries.entryTime, intensity: cbtEntries.intensity,
+    situation: cbtEntries.situation, thoughts: cbtEntries.thoughts,
+    mainUnhelpfulThought: cbtEntries.mainUnhelpfulThought, effectOfBelieving: cbtEntries.effectOfBelieving,
+    evidenceForAgainst: cbtEntries.evidenceForAgainst, alternativeExplanation: cbtEntries.alternativeExplanation,
+    worstBestScenario: cbtEntries.worstBestScenario, friendAdvice: cbtEntries.friendAdvice,
+    productiveResponse: cbtEntries.productiveResponse,
+  }).from(cbtEntries).where(eq(cbtEntries.userId, userId))
+    .orderBy(asc(cbtEntries.entryDate), asc(cbtEntries.entryTime), asc(cbtEntries.id)).all();
+  const dbt = db.select({
+    entryDate: dbtEntries.entryDate, entryTime: dbtEntries.entryTime, intensity: dbtEntries.intensity,
+    emotionName: dbtEntries.emotionName, allowAffirmation: dbtEntries.allowAffirmation,
+    watchEmotion: dbtEntries.watchEmotion, bodyLocation: dbtEntries.bodyLocation,
+    bodyFeeling: dbtEntries.bodyFeeling, presentMoment: dbtEntries.presentMoment,
+    emotionReturns: dbtEntries.emotionReturns,
+  }).from(dbtEntries).where(eq(dbtEntries.userId, userId))
+    .orderBy(asc(dbtEntries.entryDate), asc(dbtEntries.entryTime), asc(dbtEntries.id)).all();
+  const days = db.select({
+    date: memorableDays.date, title: memorableDays.title, emoji: memorableDays.emoji, description: memorableDays.description,
+  }).from(memorableDays).where(eq(memorableDays.userId, userId))
+    .orderBy(asc(memorableDays.date), asc(memorableDays.id)).all();
+  return { cbt, dbt, memorableDays: days };
+}
+
 backup.get("/json", (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
@@ -86,6 +113,7 @@ backup.get("/json", (c) => {
 
   return c.json({
     data: {
+      ...loadJournalBackup(db, userId),
       diary: { ...result.diary, moodOptions: loadMoodOptionsForUser(db, userId) },
       pain: {
         ...result.pain,
@@ -110,6 +138,7 @@ backup.get("/json", (c) => {
 
 // JSON import and XLSX routes use rawDb for transactions (bulk ops with prepared statements)
 backup.post("/json/import", limitUploadSize, async (c) => {
+  const db = c.get("db");
   const rawDb = c.get("rawDb");
   const userId = c.get("userId");
   const body = await parseJson(c, backupImportSchema);
@@ -233,6 +262,21 @@ backup.post("/json/import", limitUploadSize, async (c) => {
           insertMoodOption.run(userId, field, normalized);
         }
       }
+    }
+
+    // Each section is replaced only when the backup carries it, so a backup
+    // made before these sections existed leaves them untouched.
+    if (body.cbt) {
+      db.delete(cbtEntries).where(eq(cbtEntries.userId, userId)).run();
+      for (const row of body.cbt) db.insert(cbtEntries).values({ ...row, userId }).run();
+    }
+    if (body.dbt) {
+      db.delete(dbtEntries).where(eq(dbtEntries.userId, userId)).run();
+      for (const row of body.dbt) db.insert(dbtEntries).values({ ...row, userId }).run();
+    }
+    if (body.memorableDays) {
+      db.delete(memorableDays).where(eq(memorableDays.userId, userId)).run();
+      for (const row of body.memorableDays) db.insert(memorableDays).values({ ...row, userId }).run();
     }
 
     if (parsedPrefs) {

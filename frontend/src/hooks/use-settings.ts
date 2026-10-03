@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiEnvelopeSchema, apiFetch, getErrorMessage } from "../lib";
 import { apiRequest } from "../transport";
+import { saveFile } from "../save-file";
 import {
   BACKUP_JSON_EXPORT_OK,
   BACKUP_JSON_IMPORT_OK,
@@ -55,6 +56,10 @@ async function responseErrorMessage(response: Response, fallback: string): Promi
   return body?.error?.message ?? `${fallback} (HTTP ${response.status})`;
 }
 
+function datedName(extension: string): string {
+  return `health-backup-${new Date().toISOString().slice(0, 10)}.${extension}`;
+}
+
 export function useSettings() {
   const queryClient = useQueryClient();
   const [purgeConfirmArmed, setPurgeConfirmArmed] = useState(false);
@@ -81,12 +86,7 @@ export function useSettings() {
 
   const doExportJson = async () => {
     const payload = await apiFetch("/api/v1/backup/json", { method: "GET" }, (raw) => apiEnvelopeSchema(z.unknown()).parse(raw).data);
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const anchor = document.createElement("a");
-    anchor.href = URL.createObjectURL(blob);
-    anchor.download = `health-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(anchor.href);
+    await saveFile(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), datedName("json"));
   };
 
   const doImportJson = async (file: File) => {
@@ -106,12 +106,7 @@ export function useSettings() {
   const doExportXlsx = async () => {
     const response = await apiRequest("/api/v1/backup/xlsx", { credentials: "include" });
     if (!response.ok) throw new Error(await responseErrorMessage(response, "Spreadsheet export failed"));
-    const blob = await response.blob();
-    const anchor = document.createElement("a");
-    anchor.href = URL.createObjectURL(blob);
-    anchor.download = `health-backup-${new Date().toISOString().slice(0, 10)}.xlsx`;
-    anchor.click();
-    URL.revokeObjectURL(anchor.href);
+    await saveFile(await response.blob(), datedName("xlsx"));
   };
 
   const doImportXlsx = async (file: File) => {

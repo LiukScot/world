@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiEnvelopeSchema, apiFetch, getErrorMessage } from "../lib";
 import { apiRequest } from "../transport";
+import { saveFile } from "../save-file";
 import {
   stylesMapSchema,
   transactionListSchema,
@@ -25,20 +26,6 @@ const MONEY_QUERY_KEYS = [
   ["money-styles"],
   ["money-preferences"],
 ];
-
-function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  // Firefox and Safari only start fetching the blob once the anchor is in the
-  // document, and not before the current task ends — revoking on this tick
-  // invalidates the URL and the file downloads empty.
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
-}
 
 function datedName(extension: string): string {
   return `money-backup-${new Date().toISOString().slice(0, 10)}.${extension}`;
@@ -137,7 +124,7 @@ export function useMoneySettings(enabled: boolean) {
     const payload = await apiFetch("/api/v1/money/backup/json", { method: "GET", signal }, (raw) =>
       backupSchema.parse(raw).data,
     );
-    downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), datedName("json"));
+    await saveFile(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), datedName("json"));
   };
 
   const importJson = async (file: File, signal: AbortSignal) => {
@@ -152,7 +139,7 @@ export function useMoneySettings(enabled: boolean) {
   const exportXlsx = async (signal: AbortSignal) => {
     const response = await apiRequest("/api/v1/money/backup/xlsx", { credentials: "include", signal });
     if (!response.ok) throw new Error(`Export failed (HTTP ${response.status})`);
-    downloadBlob(await response.blob(), datedName("xlsx"));
+    await saveFile(await response.blob(), datedName("xlsx"));
   };
 
   const importXlsx = async (file: File, signal: AbortSignal) => {
