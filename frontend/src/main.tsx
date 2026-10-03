@@ -22,7 +22,13 @@ if (import.meta.env.MODE === "device") {
   }
 }
 
-const queryClient = new QueryClient();
+// The device build's backend runs in the page, so requests never touch the
+// network. The default networkMode "online" pauses every query and mutation
+// while the phone reports no connection (e.g. airplane mode).
+const networkMode = import.meta.env.MODE === "device" ? "always" : "online";
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { networkMode }, mutations: { networkMode } },
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
