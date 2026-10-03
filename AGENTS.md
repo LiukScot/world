@@ -25,6 +25,9 @@ flagged or rejected with a reference to the rule it breaks.
 
 ## 1. Style and design system
 
+- For any frontend change, use the `impeccable` skill and follow
+  `PRODUCT.md` (product context) and `DESIGN.md` (visual system).
+  Update `DESIGN.md` when a change alters the visual system.
 - When the project has a design system, use its spacing, color,
   typography, surface, and breakpoint tokens. Add a token only when
   the value represents a reusable design decision.

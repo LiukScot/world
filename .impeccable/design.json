@@ -1,0 +1,544 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-03T12:13:52.901229+00:00",
+  "title": "Design System: World",
+  "extensions": {
+    "colorMeta": {
+      "peony-pink": {
+        "role": "primary",
+        "displayName": "Peony Pink",
+        "canonical": "#ff5e8a",
+        "tonalRamp": [
+          "oklch(15% 0.198 7.0)",
+          "oklch(25% 0.198 7.0)",
+          "oklch(35% 0.198 7.0)",
+          "oklch(45% 0.198 7.0)",
+          "oklch(55% 0.198 7.0)",
+          "oklch(65% 0.198 7.0)",
+          "oklch(80% 0.198 7.0)",
+          "oklch(95% 0.198 7.0)"
+        ]
+      },
+      "mint-ledger": {
+        "role": "primary",
+        "displayName": "Mint Ledger",
+        "canonical": "#34d399",
+        "tonalRamp": [
+          "oklch(15% 0.153 163.2)",
+          "oklch(25% 0.153 163.2)",
+          "oklch(35% 0.153 163.2)",
+          "oklch(45% 0.153 163.2)",
+          "oklch(55% 0.153 163.2)",
+          "oklch(65% 0.153 163.2)",
+          "oklch(80% 0.153 163.2)",
+          "oklch(95% 0.153 163.2)"
+        ]
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Night Ink",
+        "canonical": "#121214",
+        "tonalRamp": [
+          "oklch(15% 0.004 286.0)",
+          "oklch(25% 0.004 286.0)",
+          "oklch(35% 0.004 286.0)",
+          "oklch(45% 0.004 286.0)",
+          "oklch(55% 0.004 286.0)",
+          "oklch(65% 0.004 286.0)",
+          "oklch(80% 0.004 286.0)",
+          "oklch(95% 0.004 286.0)"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Card",
+        "canonical": "#161619",
+        "tonalRamp": [
+          "oklch(15% 0.006 285.9)",
+          "oklch(25% 0.006 285.9)",
+          "oklch(35% 0.006 285.9)",
+          "oklch(45% 0.006 285.9)",
+          "oklch(55% 0.006 285.9)",
+          "oklch(65% 0.006 285.9)",
+          "oklch(80% 0.006 285.9)",
+          "oklch(95% 0.006 285.9)"
+        ]
+      },
+      "card-strong": {
+        "role": "neutral",
+        "displayName": "Card Strong",
+        "canonical": "#1a1a1d",
+        "tonalRamp": [
+          "oklch(15% 0.006 285.9)",
+          "oklch(25% 0.006 285.9)",
+          "oklch(35% 0.006 285.9)",
+          "oklch(45% 0.006 285.9)",
+          "oklch(55% 0.006 285.9)",
+          "oklch(65% 0.006 285.9)",
+          "oklch(80% 0.006 285.9)",
+          "oklch(95% 0.006 285.9)"
+        ]
+      },
+      "card-soft": {
+        "role": "neutral",
+        "displayName": "Card Soft",
+        "canonical": "#1e1e22",
+        "tonalRamp": [
+          "oklch(15% 0.008 285.8)",
+          "oklch(25% 0.008 285.8)",
+          "oklch(35% 0.008 285.8)",
+          "oklch(45% 0.008 285.8)",
+          "oklch(55% 0.008 285.8)",
+          "oklch(65% 0.008 285.8)",
+          "oklch(80% 0.008 285.8)",
+          "oklch(95% 0.008 285.8)"
+        ]
+      },
+      "control": {
+        "role": "neutral",
+        "displayName": "Control",
+        "canonical": "#34343d",
+        "tonalRamp": [
+          "oklch(15% 0.016 285.5)",
+          "oklch(25% 0.016 285.5)",
+          "oklch(35% 0.016 285.5)",
+          "oklch(45% 0.016 285.5)",
+          "oklch(55% 0.016 285.5)",
+          "oklch(65% 0.016 285.5)",
+          "oklch(80% 0.016 285.5)",
+          "oklch(95% 0.016 285.5)"
+        ]
+      },
+      "control-hover": {
+        "role": "neutral",
+        "displayName": "Control Hover",
+        "canonical": "#41414c",
+        "tonalRamp": [
+          "oklch(15% 0.019 285.5)",
+          "oklch(25% 0.019 285.5)",
+          "oklch(35% 0.019 285.5)",
+          "oklch(45% 0.019 285.5)",
+          "oklch(55% 0.019 285.5)",
+          "oklch(65% 0.019 285.5)",
+          "oklch(80% 0.019 285.5)",
+          "oklch(95% 0.019 285.5)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "canonical": "#48484f",
+        "tonalRamp": [
+          "oklch(15% 0.012 285.9)",
+          "oklch(25% 0.012 285.9)",
+          "oklch(35% 0.012 285.9)",
+          "oklch(45% 0.012 285.9)",
+          "oklch(55% 0.012 285.9)",
+          "oklch(65% 0.012 285.9)",
+          "oklch(80% 0.012 285.9)",
+          "oklch(95% 0.012 285.9)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "canonical": "#f5f5f7",
+        "tonalRamp": [
+          "oklch(15% 0.003 286.4)",
+          "oklch(25% 0.003 286.4)",
+          "oklch(35% 0.003 286.4)",
+          "oklch(45% 0.003 286.4)",
+          "oklch(55% 0.003 286.4)",
+          "oklch(65% 0.003 286.4)",
+          "oklch(80% 0.003 286.4)",
+          "oklch(95% 0.003 286.4)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#a1a1ad",
+        "tonalRamp": [
+          "oklch(15% 0.017 286.0)",
+          "oklch(25% 0.017 286.0)",
+          "oklch(35% 0.017 286.0)",
+          "oklch(45% 0.017 286.0)",
+          "oklch(55% 0.017 286.0)",
+          "oklch(65% 0.017 286.0)",
+          "oklch(80% 0.017 286.0)",
+          "oklch(95% 0.017 286.0)"
+        ]
+      },
+      "muted-soft": {
+        "role": "neutral",
+        "displayName": "Muted Soft",
+        "canonical": "#6d6d78",
+        "tonalRamp": [
+          "oklch(15% 0.017 285.8)",
+          "oklch(25% 0.017 285.8)",
+          "oklch(35% 0.017 285.8)",
+          "oklch(45% 0.017 285.8)",
+          "oklch(55% 0.017 285.8)",
+          "oklch(65% 0.017 285.8)",
+          "oklch(80% 0.017 285.8)",
+          "oklch(95% 0.017 285.8)"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Danger",
+        "canonical": "#ff5a7f",
+        "tonalRamp": [
+          "oklch(15% 0.201 10.6)",
+          "oklch(25% 0.201 10.6)",
+          "oklch(35% 0.201 10.6)",
+          "oklch(45% 0.201 10.6)",
+          "oklch(55% 0.201 10.6)",
+          "oklch(65% 0.201 10.6)",
+          "oklch(80% 0.201 10.6)",
+          "oklch(95% 0.201 10.6)"
+        ]
+      },
+      "danger-strong": {
+        "role": "tertiary",
+        "displayName": "Danger Strong",
+        "canonical": "#ff3333",
+        "tonalRamp": [
+          "oklch(15% 0.237 27.0)",
+          "oklch(25% 0.237 27.0)",
+          "oklch(35% 0.237 27.0)",
+          "oklch(45% 0.237 27.0)",
+          "oklch(55% 0.237 27.0)",
+          "oklch(65% 0.237 27.0)",
+          "oklch(80% 0.237 27.0)",
+          "oklch(95% 0.237 27.0)"
+        ]
+      },
+      "success": {
+        "role": "tertiary",
+        "displayName": "Success",
+        "canonical": "#6fe1b0",
+        "tonalRamp": [
+          "oklch(15% 0.127 163.3)",
+          "oklch(25% 0.127 163.3)",
+          "oklch(35% 0.127 163.3)",
+          "oklch(45% 0.127 163.3)",
+          "oklch(55% 0.127 163.3)",
+          "oklch(65% 0.127 163.3)",
+          "oklch(80% 0.127 163.3)",
+          "oklch(95% 0.127 163.3)"
+        ]
+      },
+      "success-fg": {
+        "role": "tertiary",
+        "displayName": "Success Ink",
+        "canonical": "#0a2018",
+        "tonalRamp": [
+          "oklch(15% 0.032 167.2)",
+          "oklch(25% 0.032 167.2)",
+          "oklch(35% 0.032 167.2)",
+          "oklch(45% 0.032 167.2)",
+          "oklch(55% 0.032 167.2)",
+          "oklch(65% 0.032 167.2)",
+          "oklch(80% 0.032 167.2)",
+          "oklch(95% 0.032 167.2)"
+        ]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Warning",
+        "canonical": "#f5a623",
+        "tonalRamp": [
+          "oklch(15% 0.159 73.0)",
+          "oklch(25% 0.159 73.0)",
+          "oklch(35% 0.159 73.0)",
+          "oklch(45% 0.159 73.0)",
+          "oklch(55% 0.159 73.0)",
+          "oklch(65% 0.159 73.0)",
+          "oklch(80% 0.159 73.0)",
+          "oklch(95% 0.159 73.0)"
+        ]
+      },
+      "warning-soft": {
+        "role": "tertiary",
+        "displayName": "Warning Soft",
+        "canonical": "#ffd38a",
+        "tonalRamp": [
+          "oklch(15% 0.103 79.5)",
+          "oklch(25% 0.103 79.5)",
+          "oklch(35% 0.103 79.5)",
+          "oklch(45% 0.103 79.5)",
+          "oklch(55% 0.103 79.5)",
+          "oklch(65% 0.103 79.5)",
+          "oklch(80% 0.103 79.5)",
+          "oklch(95% 0.103 79.5)"
+        ]
+      },
+      "warning-fg": {
+        "role": "tertiary",
+        "displayName": "Warning Ink",
+        "canonical": "#2a1a00",
+        "tonalRamp": [
+          "oklch(15% 0.049 77.5)",
+          "oklch(25% 0.049 77.5)",
+          "oklch(35% 0.049 77.5)",
+          "oklch(45% 0.049 77.5)",
+          "oklch(55% 0.049 77.5)",
+          "oklch(65% 0.049 77.5)",
+          "oklch(80% 0.049 77.5)",
+          "oklch(95% 0.049 77.5)"
+        ]
+      },
+      "risk-medium": {
+        "role": "tertiary",
+        "displayName": "Risk Medium",
+        "canonical": "#fbbf24",
+        "tonalRamp": [
+          "oklch(15% 0.164 84.4)",
+          "oklch(25% 0.164 84.4)",
+          "oklch(35% 0.164 84.4)",
+          "oklch(45% 0.164 84.4)",
+          "oklch(55% 0.164 84.4)",
+          "oklch(65% 0.164 84.4)",
+          "oklch(80% 0.164 84.4)",
+          "oklch(95% 0.164 84.4)"
+        ]
+      },
+      "risk-high": {
+        "role": "tertiary",
+        "displayName": "Risk High",
+        "canonical": "#fb7185",
+        "tonalRamp": [
+          "oklch(15% 0.169 13.4)",
+          "oklch(25% 0.169 13.4)",
+          "oklch(35% 0.169 13.4)",
+          "oklch(45% 0.169 13.4)",
+          "oklch(55% 0.169 13.4)",
+          "oklch(65% 0.169 13.4)",
+          "oklch(80% 0.169 13.4)",
+          "oklch(95% 0.169 13.4)"
+        ]
+      },
+      "risk-liquid": {
+        "role": "tertiary",
+        "displayName": "Risk Liquid",
+        "canonical": "#60a5fa",
+        "tonalRamp": [
+          "oklch(15% 0.143 254.6)",
+          "oklch(25% 0.143 254.6)",
+          "oklch(35% 0.143 254.6)",
+          "oklch(45% 0.143 254.6)",
+          "oklch(55% 0.143 254.6)",
+          "oklch(65% 0.143 254.6)",
+          "oklch(80% 0.143 254.6)",
+          "oklch(95% 0.143 254.6)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Page h1."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Stage titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text, button labels."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Text inside inputs and selects."
+      },
+      "hint": {
+        "displayName": "Hint",
+        "purpose": "Prompts, therapy callouts, chips."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tracked uppercase field labels."
+      },
+      "eyebrow": {
+        "displayName": "Eyebrow",
+        "purpose": "Stage kickers and card captions."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Numeric and code-like values."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 16px 40px rgba(0,0,0,0.45)",
+        "purpose": "Dropdown menus and modals."
+      },
+      {
+        "name": "lift",
+        "value": "0 2px 6px rgba(0,0,0,0.25)",
+        "purpose": "Small raised items."
+      },
+      {
+        "name": "ring",
+        "value": "0 0 0 2px color-mix(in srgb, var(--accent) 38%, transparent)",
+        "purpose": "Keyboard focus on buttons and controls."
+      },
+      {
+        "name": "inset-accent",
+        "value": "inset 0 0 0 1px var(--accent)",
+        "purpose": "Focus on inputs and selects."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state",
+        "value": "150ms ease",
+        "purpose": "Colour and background changes on controls."
+      },
+      {
+        "name": "sheet",
+        "value": "250ms ease",
+        "purpose": "Mobile sidebar slide-in."
+      },
+      {
+        "name": "reduced",
+        "value": "0.01ms",
+        "purpose": "Applied to all motion under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "720px"
+      },
+      {
+        "name": "wide",
+        "value": "1100px"
+      },
+      {
+        "name": "xwide",
+        "value": "1240px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "Neutral pill for secondary actions.",
+      "html": "<button class=\"ds-btn\">Cancel</button>",
+      "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-btn{font:600 14px Manrope,system-ui,sans-serif;border:0;border-radius:9999px;padding:12px 20px;min-height:40px;color:var(--text);background:var(--card-soft);cursor:pointer;transition:background .15s ease,color .15s ease}.ds-btn:hover{background:color-mix(in srgb,var(--text) 4%,var(--card-soft))}.ds-btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring)}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Accent-tinted pill for the screen's main action, such as Save.",
+      "html": "<button class=\"ds-btn-primary\">Save entry</button>",
+      "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-btn-primary{font:600 14px Manrope,system-ui,sans-serif;border:0;border-radius:9999px;padding:12px 20px;min-height:40px;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);cursor:pointer;transition:background .15s ease,color .15s ease}.ds-btn-primary:hover{color:var(--text);background:color-mix(in srgb,var(--accent) 22%,transparent)}.ds-btn-primary:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring)}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Danger-tinted pill for deletes.",
+      "html": "<button class=\"ds-btn-danger\">Delete</button>",
+      "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-btn-danger{font:600 14px Manrope,system-ui,sans-serif;border:0;border-radius:9999px;padding:12px 20px;min-height:40px;color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent);cursor:pointer;transition:background .15s ease,color .15s ease}.ds-btn-danger:hover{color:var(--text);background:color-mix(in srgb,var(--danger) 22%,transparent)}.ds-btn-danger:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring)}"
+    },
+    {
+      "name": "Field Line",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Uppercase label above a borderless tinted field.",
+      "html": "<label class=\"ds-field\"><span>Notes</span><input placeholder=\"What happened today?\"></label>",
+      "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-field{display:grid;gap:8px}.ds-field span{font:700 12px Manrope,system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}.ds-field input{font:500 13px Manrope,system-ui,sans-serif;color:var(--text);background:var(--control);border:0;border-radius:10px;padding:8px 12px;outline:none;transition:background .15s ease,box-shadow .15s ease}.ds-field input::placeholder{color:var(--muted-soft)}.ds-field input:hover,.ds-field input:focus{background:var(--control-hover)}.ds-field input:focus{box-shadow:inset 0 0 0 1px var(--accent)}"
+    },
+    {
+      "name": "Chips",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill chips; selected is a solid accent fill.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\">Walking</button><button class=\"ds-chip ds-on\" aria-pressed=\"true\">Ibuprofen</button></div>",
+      "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-chips{display:flex;gap:8px}.ds-chip{font:400 12.5px Manrope,system-ui,sans-serif;line-height:1;border:0;border-radius:9999px;padding:4px 12px;min-height:32px;color:var(--muted);background:var(--control);cursor:pointer;transition:color .15s ease,background .15s ease}.ds-chip:hover{color:var(--text);background:var(--control-hover)}.ds-chip.ds-on{color:var(--bg);background:var(--accent);font-weight:600}.ds-chip:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring)}"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Sidebar rows; active uses accent text on a 10% tint.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-on\" href=\"#\">Diary</a><a class=\"ds-nav-item\" href=\"#\">Pain</a></nav>",
+      "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-nav{display:grid;gap:4px;width:220px;background:var(--bg);padding:8px}.ds-nav-item{font:600 14px Manrope,system-ui,sans-serif;text-decoration:none;padding:12px;border-radius:10px;color:var(--muted);transition:all .15s ease}.ds-nav-item:hover{color:var(--text);background:var(--card-strong)}.ds-nav-item.ds-on{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}.ds-nav-item:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring)}"
+    },
+    {
+      "name": "Stage",
+      "kind": "card",
+      "refersTo": "stage",
+      "description": "A numbered step on Pain, Diary, CBT and DBT entry screens.",
+      "html": "<section class=\"ds-stage\"><div class=\"ds-head\"><span>Stage 1</span><h2>How are you?</h2></div><p>Pick the number that fits right now.</p></section>",
+      "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-stage{display:grid;gap:20px;padding:20px;border-radius:12px;background:var(--card-soft);max-width:420px}.ds-head{display:flex;align-items:baseline;gap:10px}.ds-head span{font:800 10px Manrope,system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}.ds-head h2{margin:0;font:800 17px Manrope,system-ui,sans-serif;letter-spacing:-.025em}.ds-stage p{margin:0;font:400 12.5px/1.5 Manrope,system-ui,sans-serif;color:var(--muted)}"
+    },
+    {
+      "name": "Nine-Step Scale",
+      "kind": "custom",
+      "refersTo": "scale-slot",
+      "description": "Mood/pain metric as nine buttons, filled up to the value in band colours.",
+      "html": "<div class=\"ds-scale\" role=\"group\" aria-label=\"Mood\"><button class=\"ds-s ds-low\">1</button><button class=\"ds-s ds-low\">2</button><button class=\"ds-s ds-low\">3</button><button class=\"ds-s ds-mid\" aria-pressed=\"true\">4</button><button class=\"ds-s\">5</button><button class=\"ds-s\">6</button><button class=\"ds-s\">7</button><button class=\"ds-s\">8</button><button class=\"ds-s\">9</button></div>",
+      "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-scale{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;max-width:420px}.ds-s{height:44px;padding:0;font:700 16px Manrope,system-ui,sans-serif;border-radius:10px;border:1px solid color-mix(in srgb,var(--border) 40%,transparent);background:var(--card-strong);color:var(--muted);cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease}.ds-s:hover{color:var(--text);border-color:var(--border)}.ds-s.ds-low{background:var(--success);border-color:var(--success);color:#0a2018}.ds-s.ds-mid{background:var(--warning);border-color:var(--warning);color:#2a1a00}.ds-s:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Journal",
+    "overview": "**Creative North Star: \"The Night Journal\"**\n\nWorld is a private notebook opened at the end of the day. The page is\nnear-black and quiet. Each realm carries one colour, and that colour marks\nonly where you are and what you are about to save. On a hard day the\nscreen should feel warm and friendly: soft pill controls, generous touch\ntargets, and no alarms except where data is at risk.\n\nDepth comes from tonal steps of the same charcoal, not from lines or\nshadows. Surfaces get one step lighter as they move toward the hand:\npage, card, control. Type is one family, Manrope, which reads friendly\nat small sizes. Hierarchy comes from weight and uppercase tracking, not\nfrom extra typefaces.\n\nThe system is built for one person on an iPhone, inside a WebView. Mobile\nbehaviour (safe areas, 16px inputs on touch, full-screen sidebar) is the\nprimary case. Desktop rules stay in the code but are not a design target.",
+    "keyCharacteristics": [
+      "Dark by default, with three surface themes: dark, grey and oled.",
+      "One accent per realm: Peony Pink for Health, Mint Ledger for Money, and the text colour for Settings.",
+      "Tonal layering instead of borders and shadows.",
+      "Pills for actions and chips; soft rounded rectangles for surfaces and fields.",
+      "Staged entry screens: numbered stages walked top to bottom."
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "A screen uses only its realm's accent. Health never shows Mint Ledger, and Money never shows Peony Pink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Themes Own Surfaces Rule",
+        "body": "Themes change only surfaces and text. Realms change only `--accent`. Any theme combines with any realm, so a new colour belongs to one of the two, never both.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tint, Don't Fill Rule",
+        "body": "Buttons and active nav items use the accent at 10–22% over the surface, with accent-coloured text. A solid accent fill is reserved for selected chips and selected menu options.",
+        "section": "colors"
+      },
+      {
+        "name": "The Caps Are Labels Rule",
+        "body": "Tracked uppercase is only for labels, kickers and captions, at 12px or smaller. Titles and values stay in sentence case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Floating-Only Shadow Rule",
+        "body": "If it scrolls with the page, it has no shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** build depth with the Card → Card Soft → Control steps before reaching for a border or shadow.",
+      "**Do** use the realm's `--accent` through tokens, never as a literal hex, so Health, Money and Settings all work.",
+      "**Do** use Night Ink as the text colour on any solid accent fill.",
+      "**Do** keep touch targets at least 40px tall, and inputs at 16px on touch devices.",
+      "**Do** keep warm, friendly copy and shapes on Health screens: pills, soft corners, prompts that stay visible while you answer."
+    ],
+    "donts": [
+      "**Don't** add a light theme default or a pure-white surface. Dark is the default.",
+      "**Don't** show two realm accents on the same screen.",
+      "**Don't** put shadows on cards or stages that scroll with the page.",
+      "**Don't** use a placeholder as the only label or prompt on a field.",
+      "**Don't** signal state by colour alone. Pair it with a border, a fill or text."
+    ]
+  }
+}
