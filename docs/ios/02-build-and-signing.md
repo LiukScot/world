@@ -43,11 +43,17 @@ repository they are billed per minute at the highest runner rate.
 ### App icon
 
 The source is `ios/icon/app-icon.svg`. After editing it, regenerate the
-PNG; iOS rejects an icon with an alpha channel, hence `-alpha off`:
+three home-screen appearances from `ios/App/App/Assets.xcassets/AppIcon.appiconset/`:
 
 ```bash
-magick ios/icon/app-icon.svg -alpha off ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+magick ../../../../icon/app-icon.svg -alpha off AppIcon-512@2x.png
+sed '/fill="url(#bg)"/d' ../../../../icon/app-icon.svg | magick -background none svg:- AppIcon-dark.png
+sed '/fill="url(#bg)"/d' ../../../../icon/app-icon.svg | magick -background none svg:- -colorspace gray AppIcon-tinted.png
 ```
+
+The light icon must be opaque, hence `-alpha off`. The dark and tinted
+icons drop the background square: iOS draws its own dark background
+behind them, and recolours the grey tinted one with the user's tint.
 
 `frontend/public/favicon.svg` is the same sphere without the background
 square; update it by hand when the sphere changes.

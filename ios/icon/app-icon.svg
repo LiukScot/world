@@ -7,7 +7,7 @@
       <stop offset="1" stop-color="#000" stop-opacity=".55"/>
     </radialGradient>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1c1c21"/><stop offset="1" stop-color="#0d0d0f"/>
+      <stop offset="0" stop-color="#f7f4ee"/><stop offset="1" stop-color="#e4ded3"/>
     </linearGradient>
   </defs>
   <rect width="1024" height="1024" fill="url(#bg)"/>
