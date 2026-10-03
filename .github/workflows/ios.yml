@@ -67,7 +67,9 @@ jobs:
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: World-unsigned
+          # An IPA is already a zip; uploading it as-is downloads the .ipa
+          # itself instead of a zip that wraps it.
+          archive: false
           path: World-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
