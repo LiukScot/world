@@ -11,7 +11,9 @@ import "./styles.css";
 
 document.body.classList.add("mh-app");
 
-if (import.meta.env.MODE === "device") {
+const isDevice = import.meta.env.MODE === "device";
+
+if (isDevice) {
   try {
     const { startLocalBackend } = await import("./local-backend");
     await startLocalBackend();
@@ -25,7 +27,7 @@ if (import.meta.env.MODE === "device") {
 // The device build's backend runs in the page, so requests never touch the
 // network. The default networkMode "online" pauses every query and mutation
 // while the phone reports no connection (e.g. airplane mode).
-const networkMode = import.meta.env.MODE === "device" ? "always" : "online";
+const networkMode = isDevice ? "always" : "online";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { networkMode }, mutations: { networkMode } },
 });
