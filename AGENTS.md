@@ -1,3 +1,6 @@
+version: 2
+- always update version (+1) when editing this file
+
 # Agent instructions
 
 These rules apply to every code change in this repository. Apply
@@ -136,6 +139,28 @@ flagged or rejected with a reference to the rule it breaks.
   says what changes, not how you got there.
 - When you read an issue or PR written by someone else, read its
   comments too (`--comments`).
+
+### Issue and PR size
+
+Every issue and PR carries a fixed cost: CI, review, merge. These rules keep
+issues and PRs from being smaller than that cost.
+
+- The scope of a piece of work is the user flow you are working on, not the
+  issue text. Fixing a defect in that flow does not widen the scope.
+- An issue describes an outcome the user can check, not a technical step.
+- Work that closes in one session is one issue and one PR. Do not open
+  follow-up issues for tasks that fit in the same PR.
+- Fix a defect found in the flow you are working on in the same branch and
+  list it under `Fixed` in the PR, even if the code comes from an earlier PR.
+- Open a separate issue or PR only when the work:
+  - touches a different module or flow;
+  - needs a product decision that belongs to the owner;
+  - contains a database migration: it goes in its own PR, before the feature;
+  - changes authentication, permissions, or sessions.
+- Do not split a PR by line count. On a diff that spans several modules, run
+  the review module by module.
+- Record decisions taken during the work in the PR description, under a
+  `Decisions` heading.
 
 ## 8. Tests
 
