@@ -210,8 +210,12 @@ export const txSchema = z.object({
  */
 export const txImportSchema = z.object({
   rows: z.array(txSchema).min(1).max(5_000),
-  replace: z.object({ from: moneyIsoDate, to: moneyIsoDate }).optional()
-});
+  replace: z.object({ from: moneyIsoDate, to: moneyIsoDate }).optional(),
+  roboOpeningBalance: z.number().finite().nonnegative().optional(),
+}).refine((body) => body.roboOpeningBalance === undefined || (
+  body.replace !== undefined &&
+  body.rows.every((row) => row.asset === "revolut robo-advisor")
+), "Robo opening balance requires a replacement of robo-advisor rows");
 
 export const MOVEMENT_CADENCES = ["monthly", "annual"] as const;
 

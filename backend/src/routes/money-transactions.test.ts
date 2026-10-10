@@ -163,6 +163,91 @@ async function listAll(app: Awaited<ReturnType<typeof setup>>["app"], cookie: st
 }
 
 describe("money transactions import", () => {
+  test("overlapping robo statements preserve opening gains and reimport without duplication", async () => {
+    const { app, cookie } = await setup();
+    const asset = "revolut robo-advisor";
+    await create(app, cookie, { ...VALID, txDate: "2026-01-10", asset, buyValue: 1000, pnl: 0 });
+    await create(app, cookie, {
+      ...VALID, txDate: "2026-09-12", asset, tipo: "Variazione Valore", buyValue: 0, pnl: 80,
+    });
+    const statement = {
+      rows: [
+        { txDate: "2026-09-15", asset, tipo: "nuovo vincolo", buyValue: 50, pnl: 0, note: "" },
+        { txDate: "2026-10-10", asset, tipo: "Variazione Valore", buyValue: 0, pnl: 20, note: "" },
+      ],
+      replace: { from: "2026-09-01", to: "2026-10-10" },
+      roboOpeningBalance: 1100,
+    };
+    for (let i = 0; i < 2; i++) {
+      expect((await importRows(app, cookie, statement)).res.status).toBe(200);
+      const rows = await listAll(app, cookie) as Array<{ txDate: string; currentValue: number; pnl: number }>;
+      expect(rows.reduce((sum, row) => sum + row.currentValue, 0)).toBe(1170);
+      expect(rows.filter((row) => row.txDate < statement.replace.from).reduce((sum, row) => sum + row.currentValue, 0)).toBe(1100);
+      expect(rows.find((row) => row.txDate === "2026-10-10")?.pnl).toBe(20);
+      expect(rows).toHaveLength(4);
+    }
+  });
+
+  test.each([
+    { opening: 900, total: 970, correction: -100, count: 3 },
+    { opening: 1000, total: 1070, correction: 0, count: 2 },
+  ])("reconciles opening balance $opening without inventing an extra gain", async ({ opening, total, correction, count }) => {
+    const { app, cookie } = await setup();
+    const asset = "revolut robo-advisor";
+    await create(app, cookie, { ...VALID, txDate: "2026-01-10", asset, buyValue: 1000, pnl: 0 });
+    const imported = await importRows(app, cookie, {
+      rows: [{ txDate: "2026-10-10", asset, tipo: "Variazione Valore", buyValue: 0, pnl: 70 }],
+      replace: { from: "2026-09-01", to: "2026-10-10" },
+      roboOpeningBalance: opening,
+    });
+    expect(imported.res.status).toBe(200);
+    const rows = await listAll(app, cookie) as Array<{ txDate: string; currentValue: number; pnl: number }>;
+    expect(rows.reduce((sum, row) => sum + row.currentValue, 0)).toBe(total);
+    expect(rows).toHaveLength(count);
+    if (correction !== 0) expect(rows.find((row) => row.txDate === "2026-08-31")?.pnl).toBe(correction);
+  });
+
+  test("refuses a nonzero robo opening balance without earlier history before deleting anything", async () => {
+    const { app, cookie } = await setup();
+    const asset = "revolut robo-advisor";
+    await create(app, cookie, { ...VALID, txDate: "2026-09-12", asset, buyValue: 50, pnl: 0 });
+    const before = await listAll(app, cookie);
+    const imported = await importRows(app, cookie, {
+      rows: [{ txDate: "2026-10-10", asset, tipo: "Variazione Valore", buyValue: 0, pnl: 70 }],
+      replace: { from: "2026-09-01", to: "2026-10-10" },
+      roboOpeningBalance: 1000,
+    });
+    expect(imported.res.status).toBe(400);
+    expect(await listAll(app, cookie)).toEqual(before);
+  });
+
+  test("preserves earlier gains when the new statement has no market revaluation", async () => {
+    const { app, cookie } = await setup();
+    const asset = "revolut robo-advisor";
+    await create(app, cookie, { ...VALID, txDate: "2026-01-10", asset, buyValue: 1000, pnl: 0 });
+    await create(app, cookie, { ...VALID, txDate: "2026-09-12", asset, tipo: "Variazione Valore", buyValue: 0, pnl: 100 });
+    const imported = await importRows(app, cookie, {
+      rows: [{ txDate: "2026-09-15", asset, tipo: "nuovo vincolo", buyValue: 50, pnl: 0 }],
+      replace: { from: "2026-09-01", to: "2026-10-10" },
+      roboOpeningBalance: 1100,
+    });
+    expect(imported.res.status).toBe(200);
+    const rows = await listAll(app, cookie) as Array<{ currentValue: number }>;
+    expect(rows.reduce((sum, row) => sum + row.currentValue, 0)).toBe(1150);
+  });
+
+  test("refuses opening balance reconciliation for another asset or without replacement", async () => {
+    const { app, cookie } = await setup();
+    for (const body of [
+      { rows: IMPORT_ROWS, replace: { from: "2026-01-01", to: "2026-02-28" }, roboOpeningBalance: 100 },
+      { rows: [{ ...IMPORT_ROWS[2], tipo: "Variazione Valore" }], roboOpeningBalance: 100 },
+      { rows: [{ ...IMPORT_ROWS[2], tipo: "Variazione Valore" }], replace: { from: "2026-01-01", to: "2026-02-28" }, roboOpeningBalance: -1 },
+    ]) {
+      expect((await importRows(app, cookie, body)).res.status).toBe(400);
+    }
+    expect(await listAll(app, cookie)).toHaveLength(0);
+  });
+
   test("requires authentication", async () => {
     const { app } = await setup();
     expect((await app.request("/transactions/import", { method: "POST" })).status).toBe(401);

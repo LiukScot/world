@@ -21,6 +21,11 @@ folded in from its own repo; the panels land one at a time.
   statement, read as the current account and the deposits it feeds together.
   The file is read in the browser and only the resulting transactions are sent. A statement whose own totals do not match its rows is
   refused.
+  When replacing an overlapping robo-advisor statement, any difference between
+  the earlier history and its opening balance is recorded as a revaluation on
+  the preceding day. This preserves gains or losses included in a replaced
+  revaluation. Earlier deposits and withdrawals must already be complete;
+  otherwise, import a statement starting at account opening.
 
 ---
 

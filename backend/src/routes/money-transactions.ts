@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { z } from "zod";
-import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, lte, sql } from "drizzle-orm";
 import { transactions } from "../db/index.ts";
 import { parseJson } from "../helpers.ts";
 import { txImportSchema, txSchema } from "../schemas.ts";
@@ -104,6 +104,32 @@ moneyTransactions.post("/import", limitImportSize, async (c) => {
   );
 
   const apply = rawDb.transaction(() => {
+    let reconciled = 0;
+    if (replace && body.roboOpeningBalance !== undefined) {
+      const earlier = db.select({
+        count: sql<number>`count(*)`,
+        total: sql<number>`coalesce(sum(${transactions.currentValue}), 0)`,
+      })
+        .from(transactions)
+        .where(and(eq(transactions.userId, userId), eq(transactions.asset, assets[0]!), lt(transactions.txDate, replace.from)))
+        .get()!;
+      if (earlier.count === 0 && body.roboOpeningBalance !== 0) {
+        return { error: "Export a statement starting before the robo-advisor held any money." };
+      }
+      const difference = Math.round((body.roboOpeningBalance - earlier.total) * 100) / 100;
+      if (difference !== 0) {
+        const previousDay = new Date(`${replace.from}T00:00:00Z`);
+        previousDay.setUTCDate(previousDay.getUTCDate() - 1);
+        // A previous statement may book months of gains inside the window being deleted.
+        db.insert(transactions).values({
+          id: makeId("tx"), userId, txDate: previousDay.toISOString().slice(0, 10), asset: assets[0]!,
+          tipo: "Variazione Valore", derivedType: inferType("Variazione Valore", 0, difference),
+          buyValue: 0, pnl: difference, currentValue: difference,
+          note: `Opening balance reconciliation for the statement starting ${replace.from}.`,
+        }).run();
+        reconciled = 1;
+      }
+    }
     const deleted = replace
       ? db
           .delete(transactions)
@@ -159,10 +185,14 @@ moneyTransactions.post("/import", limitImportSize, async (c) => {
         )
         .run();
     }
-    return { inserted: fresh.length, skipped: body.rows.length - fresh.length, deleted };
+    return { inserted: fresh.length + reconciled, skipped: body.rows.length - fresh.length, deleted };
   });
 
-  return c.json({ data: apply() });
+  const result = apply();
+  if ("error" in result) {
+    return c.json({ error: { code: "MISSING_ROBO_HISTORY", message: result.error } }, 400);
+  }
+  return c.json({ data: result });
 });
 
 moneyTransactions.put("/:id", async (c) => {

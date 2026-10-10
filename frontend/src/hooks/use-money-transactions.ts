@@ -124,6 +124,7 @@ export function useMoneyTransactions(enabled: boolean) {
           body: JSON.stringify({
             rows: parsed.rows,
             ...(replace ? { replace: { from: parsed.periodFrom, to: parsed.periodTo } } : {}),
+            ...(replace && parsed.source === "revolut-robo" ? { roboOpeningBalance: parsed.openingBalance } : {}),
           }),
         },
         (raw) => importedSchema.parse(raw).data,
