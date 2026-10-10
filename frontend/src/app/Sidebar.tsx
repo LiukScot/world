@@ -44,9 +44,6 @@ const realmIcons: Record<Realm, React.ReactNode> = {
 const navIcons: Record<NavItem, React.ReactNode> = {
   dashboard: dashboardIcon,
   "money-dashboard": dashboardIcon,
-  "settings-account": (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-  ),
   "settings-appearance": (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg>
   ),
@@ -95,28 +92,18 @@ type SidebarProps = {
   mobileOpen: boolean;
 };
 
-/*
- * The realm tiles. Lives here because the icons do, and is shared with the
- * login screen: picking a realm before signing in is the same choice as
- * switching once you are in, and the accent + stored realm follow either
- * way — so after login you land where you pointed.
- */
-export function RealmSwitcher({
+function RealmSwitcher({
   realm,
   onChange,
   className = "",
-  options = realms,
 }: {
   realm: Realm;
   onChange: (next: Realm) => void;
   className?: string;
-  /** Narrows the tiles. The login screen drops Settings: it is somewhere you
-      go to change something, not somewhere to open the app into. */
-  options?: readonly Realm[];
 }) {
   return (
     <div className={`flex gap-2 ${className}`} role="group" aria-label="Switch app">
-      {options.map((id) => (
+      {realms.map((id) => (
         <button
           key={id}
           type="button"

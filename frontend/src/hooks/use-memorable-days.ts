@@ -20,7 +20,7 @@ function todayKey() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-export function useMemorableDays(enabled: boolean) {
+export function useMemorableDays() {
   const queryClient = useQueryClient();
   const [visibleMonth, setVisibleMonth] = useState(() => {
     const now = new Date();
@@ -30,7 +30,6 @@ export function useMemorableDays(enabled: boolean) {
   const today = todayKey();
   const memorableDaysQuery = useQuery({
     queryKey: ["memorable-days", today],
-    enabled,
     queryFn: async () =>
       apiFetch("/api/v1/memorable-days", { method: "GET" }, (raw) => memorableDayListSchema.parse(raw).data),
   });

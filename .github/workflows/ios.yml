@@ -42,7 +42,7 @@ jobs:
 
       - name: Build the device bundle
         working-directory: frontend
-        run: bunx vite build --mode device
+        run: bunx vite build
 
       # Copies the bundle and the Capacitor config into ios/; both are gitignored.
       - name: Sync into the Xcode project

@@ -71,7 +71,6 @@ export function freshTxDefaults(): TxFormValues {
 // Locale comes from the browser, the currency does not — the ledger is in
 // euro regardless of where it is read.
 const CURRENCY = new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" });
-const SHORT_DATE = new Intl.DateTimeFormat(undefined, { year: "numeric", month: "2-digit", day: "2-digit" });
 
 const PERCENT_1 = new Intl.NumberFormat(undefined, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const PERCENT_2 = new Intl.NumberFormat(undefined, { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -86,16 +85,16 @@ export function formatPercent(value: number, fractionDigits: 1 | 2 = 2): string 
   return format.format((Number.isFinite(value) ? value : 0) / 100);
 }
 
-// txDate is a calendar day, not an instant. Date.parse reads a date-only
-// string as UTC midnight, which formats as the day before for any reader
-// behind UTC, so the parts are placed into a local date instead.
+// Money dates read dd-mm-yyyy for every reader, not the browser locale.
+// txDate is a calendar day, not an instant, so it is rearranged as text and
+// never parsed into a Date (which would shift it a day behind UTC).
 export function formatTxDate(iso: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   if (!match) return "—";
-  const [, year, month, day] = match.map(Number);
-  const date = new Date(year, month - 1, day);
-  if (Number.isNaN(date.getTime())) return "—";
-  return SHORT_DATE.format(date);
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  if (date.getMonth() !== Number(month) - 1) return "—";
+  return `${day}-${month}-${year}`;
 }
 
 // ── Recurring movements ──────────────────────────────────────────────────

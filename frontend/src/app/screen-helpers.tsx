@@ -8,13 +8,10 @@
  * a few px larger than the horizontal 40 beside it.
  */
 export const PAGE = "@container grid gap-page content-start";
-// The type of a title, on its own. Split out for the login screen, which is
-// outside the shell and so has no sticky head to defer to on mobile.
-export const TITLE_TYPE =
-  "m-0 [text-box:trim-both_cap_alphabetic] text-title font-bold tracking-tight text-text";
 // Hidden on mobile: the shell's sticky head names the page there, and two
 // titles on one screen is one title too many.
-export const PAGE_TITLE = `${TITLE_TYPE} max-mobile:hidden`;
+export const PAGE_TITLE =
+  "m-0 [text-box:trim-both_cap_alphabetic] text-title font-bold tracking-tight text-text max-mobile:hidden";
 
 export function EmptyState({ title, description }: { title: string; description: string }) {
   return (

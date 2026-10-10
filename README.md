@@ -1,8 +1,9 @@
 # World
 
-A personal tracking app behind one login. World is split into **realms** —
-self-contained areas you switch between from the sidebar, each with its own
-navigation and accent colour.
+A personal tracking app for iOS. Data lives on the phone; the app needs no
+server and no login. World is split into **realms** — self-contained areas you
+switch between from the sidebar, each with its own navigation and accent
+colour.
 
 **Health** — logging daily mood, pain, and habits:
 
@@ -26,97 +27,42 @@ folded in from its own repo; the panels land one at a time.
 
 ## Development
 
-Use Bun as the package manager for local development.
-
-Install dependencies once:
+Use Bun as the package manager. Install dependencies once:
 
 ```bash
 bun run setup
 ```
 
-For day-to-day development, use the root dev command:
+Build the app and serve it in the browser:
 
 ```bash
 bun run dev
 ```
 
-This starts both the backend and frontend locally with file watching for the fastest edit loop. Open [http://localhost:5555](http://localhost:5555) and keep using that URL while you edit both backend and frontend files.
+Open [http://localhost:5600](http://localhost:5600). This is the same build the
+iOS app ships: the API runs inside the page on a SQLite database kept in the
+browser's storage. Run the command again after a change.
 
-The frontend dev server still binds locally on port `5173` for Vite's internal HMR connection, but you do not need to browse to that port during normal development.
-
-If you want Docker parity for the backend instead, use:
-
-```bash
-bun run dev:docker
-```
-
-That keeps the frontend local for fast HMR, but runs the backend in Docker using the dev override.
-
-To stop the Docker backend container after a dev session:
+Tests:
 
 ```bash
-bun run dev:stop
+bun run test:unit                 # backend routes
+bun run --cwd frontend test       # frontend components
+bun run test:e2e                  # Playwright, against the build above
 ```
 
----
+The server version of World (Docker image, login, deploy) is archived in
+[`archive/`](archive/README.md). It is not built or tested.
 
-## Running with Docker (recommended)
+### Demo data
 
-For a production-style local run, use Docker directly.
-
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/).
-
-1. Copy the example env file and fill in your values:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Start the app:
-
-   ```bash
-   docker compose up --build -d
-   ```
-
-3. Create your user account:
-
-   ```bash
-   docker exec world bun --cwd backend src/user-cli.ts create \
-     --email=you@example.com \
-     --password=YourPassword \
-     --name=YourName
-   ```
-
-4. Open [http://localhost:5555](http://localhost:5555) and log in.
-
----
-
-## Deploying
-
-Push to `main` and the server picks it up: GitHub Actions builds the image,
-publishes it to `ghcr.io/liukscot/world:latest`, and Watchtower on the server
-pulls it. `docker-compose.prod.yml` is what runs there.
-
----
-
-## Data & backup
-
-Your data is stored in `data/world.sqlite`. The app runs migrations automatically on startup — no manual steps needed.
-
-> **Upgrading from a release named `health`:** rename the database file to
-> `world.sqlite` **together with its `-wal` and `-shm` companions** before
-> starting the new version, or SQLite creates an empty database and the app
-> comes up with no data. The session cookie is also renamed, so everyone is
-> signed out once on the first start.
-
-To back up or restore your data:
+To see every page filled, write a demo backup:
 
 ```bash
-bun run backup          # creates a backup of the DB
-bun run restore         # restores from a backup file
+bun run demo:seed
 ```
 
-You can also export and import all data, Health and Money together, as one JSON or Excel file from the app (Settings → Data). An import replaces the data the file contains. Files exported before this single backup, one per realm, still import.
+It writes `data/demo-backup.json`: a year of invented health and money data, with dates relative to today. Import it from Settings → Data. The import replaces the data already in the app, so use it on an empty or test install.
 
 ---
 

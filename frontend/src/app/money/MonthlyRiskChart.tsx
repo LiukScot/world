@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Tooltip } from "chart.js";
 import { Bar } from "react-chartjs-2";
-import { formatCurrency, type Snapshot } from "./core";
+import { formatCurrency, formatTxDate, type Snapshot } from "./core";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -34,7 +34,7 @@ export default function MonthlyRiskChart({ snapshots }: { snapshots: Snapshot[] 
     // The API returns newest first; a time axis reads oldest first.
     const ascending = [...snapshots].reverse();
     return {
-      labels: ascending.map((s) => s.snapshotDate),
+      labels: ascending.map((s) => formatTxDate(s.snapshotDate)),
       datasets: [
         { label: "Low", data: ascending.map((s) => s.lowRisk), backgroundColor: colors.low },
         { label: "Medium", data: ascending.map((s) => s.mediumRisk), backgroundColor: colors.medium },

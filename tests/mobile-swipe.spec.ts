@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { loginUi } from "./helpers";
+import { openApp } from "./helpers";
 
 /**
  * Issue #74: a swipe is one gesture, so it moves one thing. Once the drawer
@@ -37,7 +37,7 @@ async function swipe(page: import("@playwright/test").Page, start: Move, moves: 
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await loginUi(page);
+  await openApp(page);
 });
 
 test("a horizontal drawer swipe cancels the page scroll", async ({ page }) => {

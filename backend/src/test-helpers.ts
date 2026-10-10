@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { Hono } from "hono";
-import { sql } from "drizzle-orm";
-import { users, sessions, type DrizzleDB } from "./db/index.ts";
+import { eq } from "drizzle-orm";
+import { users, type DrizzleDB } from "./db/index.ts";
 import { createDrizzle } from "./open-db.ts";
 import { runMigrations, type SQLiteDB } from "./db.ts";
 import type { AppEnv } from "./app-env.ts";
@@ -22,68 +22,29 @@ export function createTestDb(): TestContext {
 export type SeededUser = {
   id: number;
   email: string;
-  password: string;
 };
 
 let seedUserCounter = 0;
 
-export async function seedUser(
-  db: DrizzleDB,
-  opts: { email?: string; password?: string; name?: string | null; disabledAt?: string | null } = {}
-): Promise<SeededUser> {
+export async function seedUser(db: DrizzleDB, opts: { email?: string } = {}): Promise<SeededUser> {
   const email = opts.email ?? `test-${++seedUserCounter}@example.com`;
-  const password = opts.password ?? "Password123!";
-  const passwordHash = await Bun.password.hash(password, { algorithm: "argon2id" });
-  const inserted = db
-    .insert(users)
-    .values({
-      email,
-      passwordHash,
-      name: opts.name ?? null,
-      disabledAt: opts.disabledAt ?? null,
-    })
-    .returning({ id: users.id })
-    .get();
+  const inserted = db.insert(users).values({ email, passwordHash: "" }).returning({ id: users.id }).get();
   if (!inserted) {
     throw new Error("seedUser: failed to insert user");
   }
-  return { id: inserted.id, email, password };
-}
-
-export async function seedSession(
-  db: DrizzleDB,
-  userId: number,
-  email: string,
-  opts: { ttlSeconds?: number } = {}
-): Promise<string> {
-  const sid = crypto.randomUUID().replaceAll("-", "");
-  const ttl = opts.ttlSeconds ?? 60 * 60 * 24 * 30;
-  db.insert(sessions)
-    .values({
-      sid,
-      userId,
-      email,
-      expiresAt: sql`datetime('now', '+' || ${ttl} || ' seconds')`,
-    })
-    .run();
-  return sid;
+  return { id: inserted.id, email };
 }
 
 export type TestEnv = AppEnv;
 
-export function createTestApp<E extends TestEnv = TestEnv>(
-  ctx: TestContext,
-  mountPath: string,
-  route: Hono<E>
-): Hono<E> {
-  const app = new Hono<E>();
-  app.use("*", async (c, next) => {
-    c.set("db", ctx.db);
-    c.set("rawDb", ctx.rawDb);
-    await next();
-  });
-  app.route(mountPath, route);
-  return app;
+/*
+ * Stands in for the host that puts the user on the context. The app sets its
+ * one local user on every request; a test names the user per request through
+ * this cookie, so one test can act as two users and check they stay apart.
+ */
+function userIdFromRequest(req: Request): number | undefined {
+  const match = req.headers.get("cookie")?.match(/(?:^|;\s*)test_user=(\d+)/);
+  return match ? Number(match[1]) : undefined;
 }
 
 export function createMultiRouteApp(
@@ -94,23 +55,14 @@ export function createMultiRouteApp(
   app.use("*", async (c, next) => {
     c.set("db", ctx.db);
     c.set("rawDb", ctx.rawDb);
+    const userId = userIdFromRequest(c.req.raw);
+    if (userId !== undefined) c.set("userId", userId);
     await next();
   });
   for (const { path, route } of mounts) {
     app.route(path, route);
   }
   return app;
-}
-
-export function extractSessionCookie(setCookieHeader: string | null): string {
-  if (!setCookieHeader) {
-    throw new Error("extractSessionCookie: missing Set-Cookie header");
-  }
-  const first = setCookieHeader.split(";")[0];
-  if (!first) {
-    throw new Error("extractSessionCookie: empty Set-Cookie header");
-  }
-  return first;
 }
 
 export type AuthedAppSetup = {
@@ -122,33 +74,17 @@ export type AuthedAppSetup = {
 
 export async function setupAuthedApp(
   mounts: Array<{ path: string; route: Hono<TestEnv> }>,
-  opts: { authPath?: string; email?: string; password?: string } = {}
+  opts: { email?: string } = {}
 ): Promise<AuthedAppSetup> {
   const ctx = createTestDb();
   const app = createMultiRouteApp(ctx, mounts);
-  const seedOpts: { email?: string; password?: string } = {};
-  if (opts.email !== undefined) seedOpts.email = opts.email;
-  if (opts.password !== undefined) seedOpts.password = opts.password;
-  const user = await seedUser(ctx.db, seedOpts);
-  const authPath = opts.authPath ?? "/auth";
-  const cookie = await loginAndGetCookie(app, authPath, user.email, user.password);
-  return { ctx, app, cookie, user };
+  const user = await seedUser(ctx.db, opts);
+  return { ctx, app, cookie: sessionCookieFor(ctx.db, user.email), user };
 }
 
-export async function loginAndGetCookie(
-  app: Hono<TestEnv>,
-  authMountPath: string,
-  email: string,
-  password: string
-): Promise<string> {
-  const res = await app.request(`${authMountPath}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (res.status !== 200) {
-    const body = await res.text();
-    throw new Error(`loginAndGetCookie: login failed ${res.status} ${body}`);
-  }
-  return extractSessionCookie(res.headers.get("set-cookie"));
+/** The cookie that makes a test request act as an existing user. */
+export function sessionCookieFor(db: DrizzleDB, email: string): string {
+  const user = db.select({ id: users.id }).from(users).where(eq(users.email, email)).get();
+  if (!user) throw new Error(`sessionCookieFor: no user ${email}`);
+  return `test_user=${user.id}`;
 }

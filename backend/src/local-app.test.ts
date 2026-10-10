@@ -27,11 +27,10 @@ function post(path: string, body: unknown): Request {
 }
 
 describe("local app on sql.js", () => {
-  test("answers as a signed-in user without a cookie", async () => {
+  test("answers data routes without a cookie", async () => {
     const app = createLocalApp(new SQL.Database());
-    const res = await app.fetch(request("/api/v1/auth/session"));
-    const body = (await res.json()) as { data: { authenticated: boolean } };
-    expect(body.data.authenticated).toBe(true);
+    const res = await app.fetch(request("/api/v1/diary"));
+    expect(res.status).toBe(200);
   });
 
   test("stores an entry and reads it back", async () => {
@@ -82,7 +81,6 @@ async function createServerApp(): Promise<{ fetch(request: Request): Promise<Res
     c.set("db", ctx.db);
     c.set("rawDb", ctx.rawDb);
     c.set("userId", user.id);
-    c.set("userEmail", user.email);
     await next();
   });
   mountApiRoutes(app);

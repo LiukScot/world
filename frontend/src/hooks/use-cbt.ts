@@ -25,7 +25,7 @@ function freshDefaults(): CbtFormValues {
   return { ...defaultValues, dateTime: toLocalDateTimeValue() };
 }
 
-export function useCbt(enabled: boolean) {
+export function useCbt() {
   const queryClient = useQueryClient();
   const [editingCbt, setEditingCbt] = useState<CbtEntry | null>(null);
   const [confirmDeleteCbt, setConfirmDeleteCbt] = useState<number | null>(null);
@@ -34,7 +34,6 @@ export function useCbt(enabled: boolean) {
 
   const cbtQuery = useQuery({
     queryKey: ["cbt"],
-    enabled,
     queryFn: async () => apiFetch("/api/v1/cbt", { method: "GET" }, (raw) => cbtListSchema.parse(raw).data),
   });
 

@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "../routes/auth.ts";
 import cbtRoute from "../routes/cbt.ts";
 import transactionsRoute from "../routes/money-transactions.ts";
 import { setupAuthedApp } from "../test-helpers.ts";
@@ -16,7 +15,6 @@ const SQLITE_TIMESTAMP = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 describe("row timestamps are real", () => {
   test("a money transaction gets a SQLite timestamp", async () => {
     const { app, cookie } = await setupAuthedApp([
-      { path: "/auth", route: authRoute },
       { path: "/transactions", route: transactionsRoute },
     ]);
     await app.request("/transactions", {
@@ -32,7 +30,6 @@ describe("row timestamps are real", () => {
 
   test("a health entry gets one too", async () => {
     const { app, cookie } = await setupAuthedApp([
-      { path: "/auth", route: authRoute },
       { path: "/cbt", route: cbtRoute },
     ]);
     await app.request("/cbt", {

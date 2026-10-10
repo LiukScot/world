@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import snapshotsRoute from "./money-snapshots.ts";
 import { setupAuthedApp } from "../test-helpers.ts";
 
@@ -7,7 +6,6 @@ const VALID = { snapshotDate: "2026-01-31", lowRisk: 100, mediumRisk: 200, highR
 
 async function setup() {
   return setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/snapshots", route: snapshotsRoute },
   ]);
 }

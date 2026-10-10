@@ -1,17 +1,13 @@
 import type { InlineMessage, NavItem } from "./core";
 import { THEMES } from "./core";
-import type { useAuth } from "../hooks/use-auth";
 import { useTheme } from "../hooks/use-theme";
-import { getErrorMessage } from "../lib";
 import { InlineFeedback, SectionHead } from "./shared";
 import { MedicinePreselectionSection } from "./MedicinePreselectionSection";
 import { Button } from "../components/ui/Button";
-import { FieldLine } from "../components/ui/FieldLine";
 import { MoneySettings, type MoneySettingsProps } from "./money/MoneySettings";
 import { DataSection } from "./DataSection";
 
 type SettingsSectionProps = {
-  auth: ReturnType<typeof useAuth>;
   purgeConfirmArmed: boolean;
   purgePending: boolean;
   purgeError: InlineMessage | null;
@@ -68,34 +64,6 @@ function ThemeBlock() {
   );
 }
 
-function AccountBlock({ auth }: Pick<SettingsSectionProps, "auth">) {
-  return (
-    <div className="flex flex-col gap-2">
-      <form
-        className="grid gap-3"
-        onFocus={auth.clearPasswordStatus}
-        onSubmit={auth.changePasswordForm.handleSubmit((v) => auth.changePasswordMutation.mutate(v))}
-      >
-        <FieldLine label="Current password" type="password" autoComplete="current-password" {...auth.changePasswordForm.register("currentPassword")} />
-        <FieldLine label="New password" type="password" autoComplete="new-password" {...auth.changePasswordForm.register("newPassword")} />
-        <FieldLine label="Confirm" type="password" autoComplete="new-password" {...auth.changePasswordForm.register("confirmPassword")} />
-        <div className="flex justify-end pt-2">
-          <Button type="submit" variant="primary" className="mt-[12px]" disabled={auth.changePasswordMutation.isPending}>
-            Change password
-          </Button>
-        </div>
-        <InlineFeedback
-          message={
-            auth.changePasswordMutation.error
-              ? { tone: "error", text: getErrorMessage(auth.changePasswordMutation.error) }
-              : auth.passwordFeedback
-          }
-        />
-      </form>
-    </div>
-  );
-}
-
 function DangerBlock({
   purgeConfirmArmed,
   purgePending,
@@ -138,32 +106,6 @@ function DangerBlock({
   );
 }
 
-function AccountIdentity({ auth }: Pick<SettingsSectionProps, "auth">) {
-  const email = auth.user?.email ?? "—";
-  const name = auth.user?.name?.trim();
-  return (
-    <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-sm">
-      <div className="w-[36px] h-[36px] rounded-full grid place-items-center text-sm font-bold font-body text-accent bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] border border-[color-mix(in_srgb,var(--accent)_35%,transparent)]" aria-hidden="true">
-        {(name || email).slice(0, 1).toUpperCase()}
-      </div>
-      <div className="flex flex-col gap-[2px] min-w-0">
-        <div className="text-sm font-semibold font-body text-text overflow-hidden text-ellipsis whitespace-nowrap">{name || email.split("@")[0]}</div>
-        <div className="text-xs text-muted tabular-nums">{email}</div>
-      </div>
-      {/* Log out sits with the identity it ends. Right-aligned under the
-          password form it read as that form's second step. */}
-      <Button
-        type="button"
-        className="ml-auto flex-none"
-        onClick={() => auth.logoutMutation.mutate()}
-        disabled={auth.logoutMutation.isPending}
-      >
-        Log out
-      </Button>
-    </div>
-  );
-}
-
 // One screen per nav item of the Settings realm. The tab strip is gone: the
 // sections are sidebar entries now, which is what made Settings a realm.
 export function SettingsScreen({ nav, money, ...props }: SettingsSectionProps & {
@@ -171,13 +113,6 @@ export function SettingsScreen({ nav, money, ...props }: SettingsSectionProps & 
   money: MoneySettingsProps;
 }) {
   switch (nav) {
-    case "settings-account":
-      return (
-        <div className="flex flex-col gap-5 min-w-0">
-          <AccountIdentity auth={props.auth} />
-          <AccountBlock auth={props.auth} />
-        </div>
-      );
     case "settings-appearance":
       return <ThemeBlock />;
     case "settings-health":

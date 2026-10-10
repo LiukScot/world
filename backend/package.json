@@ -4,20 +4,15 @@
   "type": "module",
   "packageManager": "bun@1.4.2",
   "scripts": {
-    "dev": "../scripts/run-bun.sh --watch src/server.ts",
-    "start": "../scripts/run-bun.sh src/server.ts",
     "typecheck": "tsc --noEmit",
-    "migrate": "../scripts/run-bun.sh src/migrate.ts",
     "test": "../scripts/run-bun.sh test src/",
     "test:watch": "../scripts/run-bun.sh test --watch src/",
     "test:coverage": "../scripts/run-bun.sh test --coverage src/"
   },
   "dependencies": {
-    "cookie": "^2.0.1",
     "drizzle-orm": "^0.45.3",
     "exceljs": "^4.4.0",
     "hono": "^4.13.10",
-    "hono-rate-limiter": "^0.5.4",
     "zod": "^4.5.4"
   },
   "overrides": {
@@ -33,7 +28,6 @@
   },
   "devDependencies": {
     "@types/bun": "^1.4.2",
-    "@types/cookie": "^1.0.0",
     "@types/node": "^26.6.2",
     "@types/sql.js": "^1.4.11",
     "drizzle-kit": "^0.31.11",

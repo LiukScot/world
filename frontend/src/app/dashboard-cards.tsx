@@ -42,8 +42,10 @@ const DELTA_TONE: Record<KpiTone, string> = {
   negative: "bg-[color-mix(in_srgb,var(--danger)_14%,transparent)] text-danger",
   flat: "bg-[color-mix(in_srgb,var(--muted)_14%,transparent)] text-muted",
 };
-// The arrow carries the direction too: colour is never the only signal.
-const DELTA_MARK: Record<KpiTone, string> = { positive: "▲", negative: "▼", flat: "—" };
+export type KpiDirection = "up" | "down" | "flat";
+// Colour says good or bad, the arrow says up or down: a rising pain average
+// is red and still points up.
+const DELTA_MARK: Record<KpiDirection, string> = { up: "▲", down: "▼", flat: "—" };
 
 export function Kpi({
   label,
@@ -56,7 +58,7 @@ export function Kpi({
   label: string;
   value: string;
   valueTone?: KpiTone;
-  delta?: { text: string; tone: KpiTone };
+  delta?: { text: string; tone: KpiTone; direction: KpiDirection };
   sub?: string;
   hero?: boolean;
 }) {
@@ -67,7 +69,7 @@ export function Kpi({
       <strong className={`${hero ? "text-[34px] tracking-[-0.02em]" : "text-lg"} font-extrabold leading-none ${tone}`}>{value}</strong>
       {delta ? (
         <span className={`justify-self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-micro font-bold ${DELTA_TONE[delta.tone]}`}>
-          <span aria-hidden="true">{DELTA_MARK[delta.tone]}</span>
+          <span aria-hidden="true">{DELTA_MARK[delta.direction]}</span>
           {delta.text}
         </span>
       ) : null}
