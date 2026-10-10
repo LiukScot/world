@@ -1,7 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import {
-  loginSchema,
-  changePasswordSchema,
   diarySchema,
   painSchema,
   cbtSchema,
@@ -11,58 +9,6 @@ import {
   backupImportSchema,
   optionFieldSchema,
 } from "./schemas.ts";
-
-describe("loginSchema", () => {
-  test("accepts valid email + password", () => {
-    const r = loginSchema.safeParse({ email: "a@b.co", password: "Password123!" });
-    expect(r.success).toBe(true);
-  });
-
-  test("rejects non-email format", () => {
-    const r = loginSchema.safeParse({ email: "not-an-email", password: "Password123!" });
-    expect(r.success).toBe(false);
-  });
-
-  test("rejects email longer than 254 chars (PR #82 cap)", () => {
-    const r = loginSchema.safeParse({ email: `${"x".repeat(250)}@e.co`, password: "Password123!" });
-    expect(r.success).toBe(false);
-  });
-
-  test("rejects empty password", () => {
-    const r = loginSchema.safeParse({ email: "a@b.co", password: "" });
-    expect(r.success).toBe(false);
-  });
-
-  test("rejects password longer than 72 chars (argon2id cap)", () => {
-    const r = loginSchema.safeParse({ email: "a@b.co", password: "x".repeat(73) });
-    expect(r.success).toBe(false);
-  });
-});
-
-describe("changePasswordSchema", () => {
-  test("accepts new password with 8 chars min", () => {
-    const r = changePasswordSchema.safeParse({ currentPassword: "old", newPassword: "12345678" });
-    expect(r.success).toBe(true);
-  });
-
-  test("rejects new password shorter than 8 chars", () => {
-    const r = changePasswordSchema.safeParse({ currentPassword: "old", newPassword: "1234567" });
-    expect(r.success).toBe(false);
-  });
-
-  test("rejects new password longer than 72 chars", () => {
-    const r = changePasswordSchema.safeParse({ currentPassword: "old", newPassword: "x".repeat(73) });
-    expect(r.success).toBe(false);
-  });
-
-  test("rejects currentPassword longer than 72 chars (argon2id cap regression)", () => {
-    const r = changePasswordSchema.safeParse({
-      currentPassword: "x".repeat(73),
-      newPassword: "ValidNewPass1!",
-    });
-    expect(r.success).toBe(false);
-  });
-});
 
 describe("diarySchema", () => {
   test("accepts minimal valid payload", () => {

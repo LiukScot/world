@@ -22,7 +22,7 @@ const EMPTY_PAIN_OPTIONS = {
   preselectedMedicines: [] as string[],
 };
 
-export function usePain(enabled: boolean) {
+export function usePain() {
   const queryClient = useQueryClient();
   const [editingPain, setEditingPain] = useState<PainEntry | null>(null);
   const [confirmDeletePain, setConfirmDeletePain] = useState<number | null>(null);
@@ -31,13 +31,11 @@ export function usePain(enabled: boolean) {
 
   const painQuery = useQuery({
     queryKey: ["pain"],
-    enabled,
     queryFn: async () => apiFetch("/api/v1/pain", { method: "GET" }, (raw) => painListSchema.parse(raw).data),
   });
 
   const painOptionsQuery = useQuery({
     queryKey: ["pain-options"],
-    enabled,
     queryFn: async () => apiFetch("/api/v1/pain/options", { method: "GET" }, (raw) => painOptionsSchema.parse(raw).data),
   });
 

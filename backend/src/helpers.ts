@@ -1,8 +1,6 @@
 import type { Context } from "hono";
 import { z } from "zod";
 import { HTTPException } from "hono/http-exception";
-import { parseCookie, stringifySetCookie } from "cookie";
-import { env } from "./env.ts";
 import { TAG_TYPES, type TagType, MOOD_TAG_FIELDS, type MoodTagField } from "./schema.ts";
 
 export const PAIN_MULTI_FIELDS = TAG_TYPES;
@@ -52,37 +50,6 @@ export function parseIdParam(c: Context, paramName = "id"): { id: number } | Res
     return c.json({ error: { code: "INVALID_ID", message: "Invalid id" } }, 400);
   }
   return { id };
-}
-
-export function readCookie(req: Request, name: string): string | null {
-  const raw = req.headers.get("cookie");
-  if (!raw) return null;
-  const parsed = parseCookie(raw);
-  return parsed[name] ?? null;
-}
-
-export function buildSessionCookie(sid: string): string {
-  return stringifySetCookie({
-    name: env.SESSION_COOKIE_NAME,
-    value: sid,
-    httpOnly: true,
-    sameSite: "strict",
-    path: "/",
-    maxAge: env.SESSION_TTL_SECONDS,
-    secure: env.COOKIE_SECURE
-  });
-}
-
-export function clearSessionCookie(): string {
-  return stringifySetCookie({
-    name: env.SESSION_COOKIE_NAME,
-    value: "",
-    httpOnly: true,
-    sameSite: "strict",
-    path: "/",
-    maxAge: 0,
-    secure: env.COOKIE_SECURE
-  });
 }
 
 export function toUniqueValues(input: unknown): string[] {

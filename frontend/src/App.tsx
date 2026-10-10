@@ -1,10 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 import {
-  useAuth, useDiary, usePain, useCbt, useDbt, useDashboard, useMemorableDays,
+  useDiary, usePain, useCbt, useDbt, useDashboard, useMemorableDays,
   useMoneyDashboard, useMoneyMovements, useMoneySettings, useMoneySnapshots, useMoneyTransactions, useSettings, useAutoBackup,
 } from "./hooks";
-import { LoginScreen } from "./app/LoginScreen";
 import { Sidebar } from "./app/Sidebar";
 import { DashboardSection } from "./app/DashboardSection";
 import { SectionErrorBoundary } from "./app/ErrorBoundary";
@@ -15,8 +14,8 @@ import {
   REALM_STORAGE_KEY, type NavItem,
 } from "./app/core";
 
-// The Dashboard is the default view and stays eager so the first paint after
-// login has no loading flash. The other sections are reached only via nav, so
+// The Dashboard is the default view and stays eager so the first paint has
+// no loading flash. The other sections are reached only via nav, so
 // they are lazy-loaded — this keeps each section's form code and its heaviest
 // dependency (memorable-days pulls in the full emoji dataset) out of the
 // initial bundle until the user actually opens that section.
@@ -32,8 +31,6 @@ const SnapshotsSection = lazy(() => import("./app/money/SnapshotsSection").then(
 const MoneyDashboardSection = lazy(() => import("./app/money/MoneyDashboardSection").then((m) => ({ default: m.MoneyDashboardSection })));
 
 function App() {
-  const auth = useAuth();
-  const loggedIn = !!auth.user;
   // The realm is derived from the nav item (money's items are `money-`
   // prefixed), so there is only one piece of state to keep straight. The
   // last realm is remembered so a reload lands you back where you were.
@@ -116,10 +113,8 @@ function App() {
   }, [nav, entryView]);
 
   useEffect(() => {
-    document.title = loggedIn
-      ? formatDocumentTitle(navLabels[nav], realm)
-      : formatDocumentTitle("Sign in");
-  }, [loggedIn, nav, realm]);
+    document.title = formatDocumentTitle(navLabels[nav], realm);
+  }, [nav, realm]);
 
   // Drive the accent (see :root[data-realm] in styles.css) and remember the
   // choice. index.html replays it before first paint to avoid a flash of the
@@ -133,21 +128,21 @@ function App() {
     }
   }, [realm]);
 
-  const diary = useDiary(loggedIn);
-  const pain = usePain(loggedIn);
-  const cbt = useCbt(loggedIn);
-  const dbt = useDbt(loggedIn);
-  const dashboard = useDashboard(loggedIn);
-  const memorable = useMemorableDays(loggedIn);
+  const diary = useDiary();
+  const pain = usePain();
+  const cbt = useCbt();
+  const dbt = useDbt();
+  const dashboard = useDashboard();
+  const memorable = useMemorableDays();
   const settings = useSettings();
-  useAutoBackup(loggedIn && import.meta.env.MODE === "device");
+  useAutoBackup();
   // Only fetched once you're actually in the Money realm — the health realm
   // has no use for it and shouldn't pay for the request.
-  const moneyTx = useMoneyTransactions(loggedIn && realm === "money");
-  const moneyMovements = useMoneyMovements(loggedIn && nav === "money-movements");
-  const moneySnapshots = useMoneySnapshots(loggedIn && nav === "money-snapshots");
-  const moneySettings = useMoneySettings(loggedIn && nav === "settings-money");
-  const moneyDashboard = useMoneyDashboard(loggedIn && nav === "money-dashboard");
+  const moneyTx = useMoneyTransactions(realm === "money");
+  const moneyMovements = useMoneyMovements(nav === "money-movements");
+  const moneySnapshots = useMoneySnapshots(nav === "money-snapshots");
+  const moneySettings = useMoneySettings(nav === "settings-money");
+  const moneyDashboard = useMoneyDashboard(nav === "money-dashboard");
 
   // Interactive swipe gestures: the sidebar follows the finger 1:1 during
   // the drag, then snaps open or closed on release based on how far it moved.
@@ -317,22 +312,6 @@ function App() {
   // so the toaster is pinned to "dark" to match. There is no light mode to follow.
   const toaster = <Toaster theme="dark" richColors position="bottom-right" />;
 
-  if (!auth.user) {
-    return (
-      <>
-        <LoginScreen
-          loginForm={auth.loginForm}
-          loginMutation={auth.loginMutation}
-          registerForm={auth.registerForm}
-          registerMutation={auth.registerMutation}
-          realm={realm}
-          onRealmChange={(next) => goToNav(navItemsByRealm[next][0])}
-        />
-        {toaster}
-      </>
-    );
-  }
-
   return (
     <>
     <div className={`grid grid-cols-[220px_1fr] h-dvh overflow-hidden transition-[grid-template-columns] duration-[250ms] ease-[ease] max-mobile:grid-cols-1 ${sidebarCollapsed ? "mobile:grid-cols-[62px_1fr]" : ""}`}>
@@ -376,7 +355,9 @@ function App() {
             >
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <span className="[text-box:trim-both_cap_alphabetic] text-title font-bold tracking-tight text-text truncate">{navLabels[nav]}</span>
+            {/* No text-box trim here: truncate clips at the line box, and a
+                box trimmed to the baseline cuts every descender. */}
+            <span className="text-title font-bold tracking-tight text-text truncate">{navLabels[nav]}</span>
           </div>
           {/* Second row, inside the sticky strip: switching view is
               navigation, and navigation must not scroll away. */}
@@ -502,7 +483,7 @@ function App() {
         {nav === "money-dashboard" && <MoneyDashboardSection {...moneyDashboard} />}
 
         {realm === "settings" && (
-          <SettingsSection nav={nav} money={moneySettings} auth={auth}
+          <SettingsSection nav={nav} money={moneySettings}
             purgeConfirmArmed={settings.purgeConfirmArmed}
             purgePending={settings.purgePending} purgeError={settings.purgeError}
             onPurgeArm={settings.onPurgeArm} onPurgeConfirm={settings.onPurgeConfirm}

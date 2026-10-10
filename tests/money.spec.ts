@@ -1,22 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { loginApi, loginUi, navigateTo, openEntryView, uniqueText } from "./helpers";
+import { navigateTo, openApp, openEntryView, uniqueText } from "./helpers";
 
-async function purgeMoneyData(request: Parameters<typeof loginApi>[0]) {
-  await loginApi(request);
-  const response = await request.post("/api/v1/money/data/purge");
-  expect(response.ok(), "expected money purge to succeed").toBeTruthy();
-}
-
-test.beforeEach(async ({ request, page }) => {
-  await purgeMoneyData(request);
-  await loginUi(page);
+test.beforeEach(async ({ page }) => {
+  await openApp(page);
   await page.getByRole("group", { name: "Switch app" }).getByRole("button", { name: "Money" }).click();
   await navigateTo(page, "Transactions");
   await expect(page.getByRole("heading", { name: "Transactions" })).toBeVisible();
-});
-
-test.afterEach(async ({ request }) => {
-  await purgeMoneyData(request);
 });
 
 test("shows a transactions empty state when there are none", async ({ page }) => {

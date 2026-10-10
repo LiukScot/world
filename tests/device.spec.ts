@@ -2,10 +2,10 @@ import { expect, test, type BrowserContext } from "@playwright/test";
 import { openSettingsRealm, openSettingsSection } from "./helpers";
 
 /*
- * The device build has no server. These run against static files, so every
- * API call has to be answered by the backend running inside the page.
+ * The app has no server. These run against static files, so every API call
+ * has to be answered by the backend running inside the page.
  */
-test("opens signed in, saves an entry, and keeps it after a reload", async ({ page }) => {
+test("opens with no login, saves an entry, and keeps it after a reload", async ({ page }) => {
   const escaped: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).pathname.startsWith("/api/")) escaped.push(request.url());

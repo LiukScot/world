@@ -37,7 +37,7 @@ describe("useDashboard chart theme colors", () => {
   });
 
   test("re-reads CSS vars when the data-theme attribute changes", async () => {
-    const { result } = renderHook(() => useDashboard(true), { wrapper });
+    const { result } = renderHook(() => useDashboard(), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(anxietyColor(result.current.wellbeingSeries)).toBe("#111111");

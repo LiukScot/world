@@ -1,4 +1,3 @@
-export { useAuth } from "./use-auth";
 export { useDiary } from "./use-diary";
 export { usePain } from "./use-pain";
 export { useCbt } from "./use-cbt";

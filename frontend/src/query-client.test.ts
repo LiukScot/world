@@ -7,9 +7,9 @@ let client: QueryClient | undefined;
 
 // mount() is what QueryClientProvider does: it resumes paused mutations when
 // the connection comes back.
-function runMutation(isDevice: boolean) {
+function runMutation() {
   const mutationFn = vi.fn().mockResolvedValue("saved");
-  client = createQueryClient(isDevice);
+  client = createQueryClient();
   client.mount();
   const mutation = client.getMutationCache().build(client, { mutationFn });
   return { mutationFn, result: mutation.execute(undefined) };
@@ -21,19 +21,10 @@ describe("createQueryClient offline behavior", () => {
     onlineManager.setOnline(true);
   });
 
-  test("device build runs mutations while offline", async () => {
+  test("runs mutations while offline", async () => {
     onlineManager.setOnline(false);
-    const { mutationFn, result } = runMutation(true);
+    const { mutationFn, result } = runMutation();
     await expect(result).resolves.toBe("saved");
     expect(mutationFn).toHaveBeenCalledTimes(1);
-  });
-
-  test("web build pauses mutations until back online", async () => {
-    onlineManager.setOnline(false);
-    const { mutationFn, result } = runMutation(false);
-    await Promise.resolve();
-    expect(mutationFn).not.toHaveBeenCalled();
-    onlineManager.setOnline(true);
-    await expect(result).resolves.toBe("saved");
   });
 });

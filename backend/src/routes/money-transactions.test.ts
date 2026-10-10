@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import transactionsRoute from "./money-transactions.ts";
-import { loginAndGetCookie, seedUser, setupAuthedApp } from "../test-helpers.ts";
+import { sessionCookieFor, seedUser, setupAuthedApp } from "../test-helpers.ts";
 
 const VALID = {
   txDate: "2026-03-14",
@@ -14,7 +13,6 @@ const VALID = {
 
 async function setup() {
   const s = await setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/transactions", route: transactionsRoute },
   ]);
   return { ctx: s.ctx, app: s.app, cookie: s.cookie, user: s.user };
@@ -111,14 +109,7 @@ describe("money transactions CRUD", () => {
     const { ctx, app, cookie } = await setup();
     const created = await create(app, cookie);
     const other = await seedUser(ctx.db);
-    const otherCookie = await (async () => {
-      const res = await app.request("/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: other.email, password: other.password }),
-      });
-      return res.headers.get("set-cookie")!.split(";")[0]!;
-    })();
+    const otherCookie = sessionCookieFor(ctx.db, other.email);
 
     const put = await app.request(`/transactions/${created.body.data.id}`, {
       method: "PUT",
@@ -272,7 +263,7 @@ describe("money transactions import", () => {
     const { app, cookie, ctx } = await setup();
     await importRows(app, cookie, { rows: IMPORT_ROWS });
     const other = await seedUser(ctx.db, { email: "other@example.com" });
-    const otherCookie = await loginAndGetCookie(app, "/auth", other.email, other.password);
+    const otherCookie = sessionCookieFor(ctx.db, other.email);
     const mine = await importRows(app, otherCookie, { rows: IMPORT_ROWS });
     expect(mine.body.data).toMatchObject({ inserted: 3, skipped: 0 });
   });

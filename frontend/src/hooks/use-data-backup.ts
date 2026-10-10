@@ -69,7 +69,7 @@ export function useDataBackup() {
   };
 
   const exportXlsx = async () => {
-    const response = await apiRequest("/api/v1/full-backup/xlsx", { credentials: "include" });
+    const response = await apiRequest("/api/v1/full-backup/xlsx");
     if (!response.ok) throw new Error(await responseErrorMessage(response, "Spreadsheet export failed"));
     await saveFile(await response.blob(), datedName("xlsx"));
   };
@@ -79,7 +79,7 @@ export function useDataBackup() {
   const importXlsx = async (file: File) => {
     const form = new FormData();
     form.append("file", file);
-    const response = await apiRequest("/api/v1/full-backup/xlsx/import", { method: "POST", credentials: "include", body: form });
+    const response = await apiRequest("/api/v1/full-backup/xlsx/import", { method: "POST", body: form });
     if (!response.ok) throw new Error(await responseErrorMessage(response, "Spreadsheet import failed"));
   };
 

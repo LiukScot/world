@@ -244,10 +244,10 @@ export function MemorableDaysSection({ memorable }: Props) {
                   onClick={() => openEdit(item)}
                 >
                   <span className="text-title leading-none">{item.emoji || "✨"}</span>
-                  <span className="flex-1 flex flex-col gap-1 items-start">
+                  <span className="flex-1 min-w-0 flex flex-col gap-1 items-start">
                     <span className="w-full flex items-baseline justify-between gap-3">
-                      <strong className="text-base min-w-0 text-text">{item.title}</strong>
-                      <span className="text-muted text-control flex-shrink-0 text-right">{item.date}</span>
+                      <strong className="text-base min-w-0 truncate text-text">{item.title}</strong>
+                      <span className="text-muted text-control flex-shrink-0 whitespace-nowrap text-right">{item.date}</span>
                     </span>
                     {item.description ? (
                       <span className="text-micro text-muted-soft w-full text-left truncate">{item.description}</span>

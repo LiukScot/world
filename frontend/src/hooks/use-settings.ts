@@ -4,12 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiEnvelopeSchema, apiFetch, getErrorMessage } from "../lib";
 import { defaultPrefsValue, prefsSchema } from "../app/core";
 
-export function usePrefs(enabled: boolean) {
+export function usePrefs() {
   const queryClient = useQueryClient();
 
   const prefsQuery = useQuery({
     queryKey: ["prefs"],
-    enabled,
     queryFn: async () => apiFetch("/api/v1/preferences", { method: "GET" }, (raw) => prefsSchema.parse(raw).data),
   });
 

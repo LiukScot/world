@@ -1,12 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import moneyPrefsRoute from "./money-prefs.ts";
 import preferencesRoute from "./preferences.ts";
 import { setupAuthedApp } from "../test-helpers.ts";
 
 async function setup() {
   return setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/money/preferences", route: moneyPrefsRoute },
     { path: "/preferences", route: preferencesRoute },
   ]);

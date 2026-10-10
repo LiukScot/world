@@ -66,7 +66,7 @@ type LocalDatabase = {
 
 let localDatabase: LocalDatabase | null = null;
 
-/** The database of the backend running in the page. Device build only. */
+/** The database of the backend running in the page. */
 export function getLocalDatabase(): LocalDatabase {
   if (!localDatabase) throw new Error("The in-page backend is not running");
   return localDatabase;

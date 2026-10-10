@@ -1,11 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import moodRoute from "./mood.ts";
-import { extractSessionCookie, seedUser, setupAuthedApp } from "../test-helpers.ts";
+import { sessionCookieFor, seedUser, setupAuthedApp } from "../test-helpers.ts";
 
 async function setup() {
   const s = await setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/mood", route: moodRoute },
   ]);
   return { ctx: s.ctx, app: s.app, cookie: s.cookie, userId: s.user.id };
@@ -83,13 +81,8 @@ describe("mood options restore/remove", () => {
       body: JSON.stringify({ field: "positive_moods", value: "joy" }),
     });
     expect(restore.status).toBe(200);
-    await seedUser(ctx.db, { email: "other@example.com", password: "Password123!" });
-    const otherLogin = await app.request("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "other@example.com", password: "Password123!" }),
-    });
-    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+    await seedUser(ctx.db, { email: "other@example.com" });
+    const otherCookie = sessionCookieFor(ctx.db, "other@example.com");
     const res = await app.request("/mood/options", { headers: { cookie: otherCookie } });
     const body = await res.json();
     expect(body.data.positive_moods).toEqual([]);

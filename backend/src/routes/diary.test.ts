@@ -1,15 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import diaryRoute from "./diary.ts";
 import {
-  extractSessionCookie,
-  seedUser,
+  sessionCookieFor, seedUser,
   setupAuthedApp,
 } from "../test-helpers.ts";
 
 async function setup() {
   const setup = await setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/diary", route: diaryRoute },
   ]);
   return { ctx: setup.ctx, app: setup.app, cookie: setup.cookie, userId: setup.user.id };
@@ -161,13 +158,8 @@ describe("GET /diary", () => {
       body: JSON.stringify(validBody),
     });
     expect(created.status).toBe(201);
-    await seedUser(ctx.db, { email: "other@example.com", password: "Password123!" });
-    const otherLogin = await app.request("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "other@example.com", password: "Password123!" }),
-    });
-    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+    await seedUser(ctx.db, { email: "other@example.com" });
+    const otherCookie = sessionCookieFor(ctx.db, "other@example.com");
     const res = await app.request("/diary", { headers: { cookie: otherCookie } });
     const body = await res.json();
     expect(body.data).toEqual([]);
@@ -222,13 +214,8 @@ describe("PUT /diary/:id", () => {
     });
     expect(created.status).toBe(201);
     const { data } = await created.json();
-    await seedUser(ctx.db, { email: "other@example.com", password: "Password123!" });
-    const otherLogin = await app.request("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "other@example.com", password: "Password123!" }),
-    });
-    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+    await seedUser(ctx.db, { email: "other@example.com" });
+    const otherCookie = sessionCookieFor(ctx.db, "other@example.com");
     const res = await app.request(`/diary/${data.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", cookie: otherCookie },

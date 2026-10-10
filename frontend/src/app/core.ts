@@ -1,47 +1,10 @@
-import { create } from "zustand";
 import { z } from "zod";
 import { apiEnvelopeSchema } from "../lib";
-
-type User = { id: number; email: string; name: string | null };
-type AuthState = { user: User | null; setUser: (user: User | null) => void };
-export const useAuthStore = create<AuthState>((set) => ({ user: null, setUser: (user) => set({ user }) }));
 
 export type PainFieldKey = "area" | "symptoms" | "activities" | "medicines" | "habits" | "other";
 export type MoodFieldKey = "positive_moods" | "negative_moods" | "general_moods";
 
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-export const sessionDataSchema = apiEnvelopeSchema(
-  z.object({
-    authenticated: z.boolean(),
-    user: z.object({ id: z.number(), email: z.string(), name: z.string().nullable() }).optional(),
-  }),
-);
-
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
-// Mirrors backend/src/schemas.ts registerSchema field for field, including
-// the 72-byte bcrypt ceiling and the email fold. A looser copy here does not
-// let anything through — it just turns a message the form could have shown
-// into a generic 400 from the server.
-export const registerSchema = z.object({
-  email: z.string().trim().email().max(254).transform((v) => v.toLowerCase()),
-  password: z.string().min(8, "At least 8 characters").max(72, "At most 72 characters"),
-});
-
-export const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1),
-    newPassword: z.string().min(8),
-    confirmPassword: z.string().min(8),
-  })
-  .refine((val) => val.newPassword === val.confirmPassword, {
-    path: ["confirmPassword"],
-    message: "Passwords do not match",
-  });
 
 export const diaryEntrySchema = z.object({
   id: z.number(),
@@ -237,7 +200,7 @@ export type DbtFormValues = z.infer<typeof dbtFormSchema>;
 export const navItems = [
   "dashboard", "memorable-days", "diary", "pain", "cbt", "dbt",
   "money-dashboard", "money-transactions", "money-movements", "money-snapshots",
-  "settings-account", "settings-appearance", "settings-health", "settings-money", "settings-data", "settings-design-system",
+  "settings-appearance", "settings-health", "settings-money", "settings-data", "settings-design-system",
 ] as const;
 export type NavItem = (typeof navItems)[number];
 
@@ -252,7 +215,6 @@ export const navLabels: Record<NavItem, string> = {
   "money-transactions": "Transactions",
   "money-movements": "Movements",
   "money-snapshots": "Snapshots",
-  "settings-account": "Account",
   "settings-appearance": "Appearance",
   "settings-health": "Health",
   "settings-money": "Money",
@@ -261,7 +223,7 @@ export const navLabels: Record<NavItem, string> = {
 };
 
 /*
- * The app is a set of realms behind one shell and one login. A realm owns its
+ * The app is a set of realms behind one shell. A realm owns its
  * nav list, its accent (see :root[data-realm] in styles.css) and its title.
  * Settings is a realm too, rather than a page hanging off the others: that
  * keeps every nav item inside exactly one realm, so the active realm stays
@@ -301,7 +263,7 @@ export const realmLabels: Record<Realm, string> = { health: "Health", money: "Mo
 export const navItemsByRealm: Record<Realm, NavItem[]> = {
   health: ["dashboard", "pain", "diary", "cbt", "dbt", "memorable-days"],
   money: ["money-dashboard", "money-transactions", "money-movements", "money-snapshots"],
-  settings: ["settings-account", "settings-appearance", "settings-health", "settings-money", "settings-data", "settings-design-system"],
+  settings: ["settings-appearance", "settings-health", "settings-money", "settings-data", "settings-design-system"],
 };
 
 // Health owns the unprefixed items because it was here first; every realm
@@ -456,7 +418,10 @@ export function formatNumber(value: number | null, digits = 2): string {
   return value.toFixed(digits);
 }
 
-export function formatDelta(value: number, invert = false): { text: string; className: string } | null {
+export function formatDelta(
+  value: number,
+  invert = false,
+): { text: string; className: string; direction: "up" | "down" | "flat" } | null {
   if (!Number.isFinite(value)) return null;
   const rounded = Number(value.toFixed(0));
   if (!Number.isFinite(rounded)) return null;
@@ -465,6 +430,7 @@ export function formatDelta(value: number, invert = false): { text: string; clas
   return {
     text: `${rounded > 0 ? "+" : ""}${rounded}%`,
     className: positive ? "positive" : negative ? "negative" : "neutral",
+    direction: rounded > 0 ? "up" : rounded < 0 ? "down" : "flat",
   };
 }
 
