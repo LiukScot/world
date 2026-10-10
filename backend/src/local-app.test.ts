@@ -27,6 +27,29 @@ function post(path: string, body: unknown): Request {
 }
 
 describe("local app on sql.js", () => {
+  test("overlapping robo statements preserve earlier gains on the device database", async () => {
+    const app = createLocalApp(new SQL.Database());
+    const path = "/api/v1/money/transactions";
+    const asset = "revolut robo-advisor";
+    expect((await app.fetch(post(path, { txDate: "2026-01-10", asset, tipo: "nuovo vincolo", buyValue: 1700, pnl: -3.79 }))).status).toBe(201);
+    expect((await app.fetch(post(path, { txDate: "2026-09-12", asset, tipo: "Variazione Valore", buyValue: 0, pnl: 197.59 }))).status).toBe(201);
+    const statement = {
+      rows: [
+        { txDate: "2026-09-11", asset, tipo: "nuovo vincolo", buyValue: 100, pnl: 0 },
+        { txDate: "2026-09-11", asset, tipo: "commissione", buyValue: 0, pnl: -1.21 },
+        { txDate: "2026-10-10", asset, tipo: "Variazione Valore", buyValue: 0, pnl: 101.51 },
+      ],
+      replace: { from: "2026-09-01", to: "2026-10-10" },
+      roboOpeningBalance: 1907.83,
+    };
+    for (let i = 0; i < 2; i++) {
+      expect((await app.fetch(post(`${path}/import`, statement))).status).toBe(200);
+      const { data } = await (await app.fetch(request(path))).json() as { data: Array<{ currentValue: number }> };
+      expect(Math.round(data.reduce((sum, row) => sum + row.currentValue, 0) * 100) / 100).toBe(2108.13);
+      expect(data).toHaveLength(5);
+    }
+  });
+
   test("answers as a signed-in user without a cookie", async () => {
     const app = createLocalApp(new SQL.Database());
     const res = await app.fetch(request("/api/v1/auth/session"));

@@ -184,6 +184,15 @@ export function StatementImportPreview({
         />
       )}
 
+      {replace && parsed.source === "revolut-robo" && !unaccountedOpening && (
+        <InlineFeedback
+          message={{
+            tone: "warning",
+            text: `The earlier history will be matched to the statement's opening balance of ${formatCurrency(parsed.openingBalance)}. Any difference is recorded as Variazione Valore on the preceding day, preserving earlier gains or losses when overlapping rows are replaced. Use a statement from account opening if earlier deposits or withdrawals are missing.`,
+          }}
+        />
+      )}
+
       {existingInPeriod > 0 && (
         <div className="grid gap-2">
           <InlineFeedback
@@ -222,7 +231,7 @@ export function StatementImportPreview({
           Cancel
         </Button>
         <Button type="button" variant="primary" onClick={onConfirm} disabled={isSaving || unaccountedOpening}>
-          {isSaving ? "Importing..." : `Import ${parsed.rows.length}`}
+          {isSaving ? "Importing..." : "Import statement"}
         </Button>
       </div>
     </section>
