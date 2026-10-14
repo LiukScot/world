@@ -106,7 +106,7 @@ export function addMoneySheets(wb: ExcelJS.Workbook, db: DrizzleDB, userId: numb
 moneyBackup.get("/xlsx", async (c) => {
   const wb = new ExcelJS.Workbook();
   addMoneySheets(wb, c.get("db"), c.get("userId"));
-  const buf = Buffer.from(await wb.xlsx.writeBuffer());
+  const buf = await wb.xlsx.writeBuffer();
   c.header("content-type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   c.header("content-disposition", `attachment; filename="money-${new Date().toISOString().slice(0, 10)}.xlsx"`);
   return c.body(buf, 200);
