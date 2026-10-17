@@ -1,0 +1,48 @@
+import { useState } from "react";
+import { authenticate, readLockEnabled, saveLockEnabled } from "../app-lock";
+import { getErrorMessage } from "../lib";
+import { SectionHead } from "./shared";
+
+const UNAVAILABLE = "Face ID is not available. Set up Face ID or a passcode in iOS Settings, then try again.";
+const FAILED = "Face ID did not match, so the lock stays off. Try again.";
+
+export function LockSettings() {
+  const [enabled, setEnabled] = useState(readLockEnabled);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const toggle = async (on: boolean) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      // Prove Face ID works before turning the lock on, so it cannot lock you out.
+      if (on) {
+        const result = await authenticate();
+        if (!result.ok) {
+          setMessage(result.reason === "unavailable" ? UNAVAILABLE : FAILED);
+          return;
+        }
+      }
+      saveLockEnabled(on);
+      setEnabled(on);
+    } catch (error) {
+      setMessage(`Face ID could not be checked: ${getErrorMessage(error)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-3">
+      <SectionHead title="App lock" aside="asked when the app opens" variant="accent" />
+      <label className="flex items-center justify-between gap-3 p-3 bg-card-soft rounded-md text-control font-semibold text-text">
+        Lock with Face ID
+        <input type="checkbox" checked={enabled} disabled={busy} onChange={(e) => void toggle(e.target.checked)} />
+      </label>
+      <p className="m-0 text-hint text-muted leading-normal">
+        "World asks for Face ID every time it opens or returns from the background. If Face ID fails, you can use your passcode."
+      </p>
+      {message ? <p role="status" className="m-0 text-hint text-warning leading-normal">{message}</p> : null}
+    </div>
+  );
+}

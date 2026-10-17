@@ -6,6 +6,7 @@ import { MedicinePreselectionSection } from "./MedicinePreselectionSection";
 import { Button } from "../components/ui/Button";
 import { MoneySettings, type MoneySettingsProps } from "./money/MoneySettings";
 import { DataSection } from "./DataSection";
+import { LockSettings } from "./LockSettings";
 
 type SettingsSectionProps = {
   purgeConfirmArmed: boolean;
@@ -134,6 +135,8 @@ export function SettingsScreen({ nav, money, ...props }: SettingsSectionProps & 
       return <MoneySettings {...money} />;
     case "settings-data":
       return <DataSection />;
+    case "settings-security":
+      return <LockSettings />;
     default:
       return null;
   }
