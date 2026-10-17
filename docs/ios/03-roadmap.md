@@ -94,7 +94,8 @@ Tracked in #243.
       the time (`frontend/src/app/DailyChip.tsx`).
 - [x] Optional Face ID lock for the whole app, switched on in Settings →
       Security. Asked on app open and on return from the background
-      (`frontend/src/app/AppLock.tsx`, `LockSettings.tsx`). Falls back to the
+      (`frontend/src/app/AppLock.tsx`, `LockSettings.tsx`). A native blur in
+      `SceneDelegate.swift` hides the app in the app switcher. Falls back to the
       device passcode.
 
 Check: a reminder fires with the app closed; the lock blocks the UI
