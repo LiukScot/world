@@ -7,26 +7,45 @@ export const REMINDER_PAGES = ["diary", "pain", "cbt", "dbt", "money-snapshots"]
 export type ReminderPage = (typeof REMINDER_PAGES)[number];
 
 const storageKey = (page: ReminderPage) => `world.dailyReminder.${page}`;
-// iOS replaces a pending notification that has the same id, so a page's id
-// must stay the same between saves.
-const notificationId = (page: ReminderPage) => REMINDER_PAGES.indexOf(page) + 1;
 
-const reminderSchema = z.object({
-  enabled: z.boolean(),
-  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-});
+/**
+ * Weekdays in display order. `day` follows iOS: 1 is Sunday, 7 is Saturday.
+ */
+export const WEEKDAYS = [
+  { day: 2, letter: "M", name: "Monday" },
+  { day: 3, letter: "T", name: "Tuesday" },
+  { day: 4, letter: "W", name: "Wednesday" },
+  { day: 5, letter: "T", name: "Thursday" },
+  { day: 6, letter: "F", name: "Friday" },
+  { day: 7, letter: "S", name: "Saturday" },
+  { day: 1, letter: "S", name: "Sunday" },
+] as const;
+
+// iOS replaces a pending notification that has the same id, so the id of a
+// page and weekday must stay the same between saves.
+const notificationId = (page: ReminderPage, day: number) => (REMINDER_PAGES.indexOf(page) + 1) * 10 + day;
+
+const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+const reminderSchema = z.object({ days: z.array(z.number().int().min(1).max(7)), time: timeSchema });
+// Saved before reminders had weekdays: one daily reminder, notification id 1-5.
+const legacySchema = z.object({ enabled: z.boolean(), time: timeSchema });
+const legacyNotificationId = (page: ReminderPage) => REMINDER_PAGES.indexOf(page) + 1;
 
 export type Reminder = z.infer<typeof reminderSchema>;
 export type ReminderResult = { ok: true } | { ok: false; reason: "denied" };
 
-export const DEFAULT_REMINDER: Reminder = { enabled: false, time: "20:00" };
+/** No days means no reminder. */
+export const DEFAULT_REMINDER: Reminder = { days: [], time: "20:00" };
 
 export function readReminder(page: ReminderPage): Reminder {
   try {
     const raw = localStorage.getItem(storageKey(page));
     if (raw) {
-      const parsed = reminderSchema.safeParse(JSON.parse(raw));
+      const stored: unknown = JSON.parse(raw);
+      const parsed = reminderSchema.safeParse(stored);
       if (parsed.success) return parsed.data;
+      const legacy = legacySchema.safeParse(stored);
+      if (legacy.success) return { days: legacy.data.enabled ? WEEKDAYS.map((w) => w.day) : [], time: legacy.data.time };
     }
   } catch (error) {
     console.warn("Could not read the saved reminder", error);
@@ -42,36 +61,57 @@ function persist(page: ReminderPage, reminder: Reminder): void {
   }
 }
 
-/**
- * Saves the reminder of one page and (re)schedules the daily notification. Turning it on
- * asks iOS for notification permission; when that is refused the reminder is
- * saved as off, so the stored state always matches what iOS will deliver.
- */
-export async function saveReminder(page: ReminderPage, next: Reminder): Promise<ReminderResult> {
-  if (!next.enabled) {
-    await LocalNotifications.cancel({ notifications: [{ id: notificationId(page) }] });
-  } else {
+// Always includes the page's legacy daily notification, so a reminder made
+// before weekdays existed stops firing once the page is saved again.
+const cancelDays = (page: ReminderPage, days: readonly number[]) =>
+  LocalNotifications.cancel({
+    notifications: [...days.map((day) => notificationId(page, day)), legacyNotificationId(page)].map((id) => ({ id })),
+  });
+
+async function apply(page: ReminderPage, next: Reminder): Promise<ReminderResult> {
+  const allDays = WEEKDAYS.map((w) => w.day);
+  const days = allDays.filter((day) => next.days.includes(day));
+  const unselected = allDays.filter((day) => !days.includes(day));
+  if (days.length > 0) {
     let { display } = await LocalNotifications.checkPermissions();
     if (display === "prompt" || display === "prompt-with-rationale") {
       display = (await LocalNotifications.requestPermissions()).display;
     }
     if (display !== "granted") {
-      await LocalNotifications.cancel({ notifications: [{ id: notificationId(page) }] });
-      persist(page, { ...next, enabled: false });
+      await cancelDays(page, allDays);
+      persist(page, { ...next, days: [] });
       return { ok: false, reason: "denied" };
     }
     const [hour, minute] = next.time.split(":").map(Number);
-    // Scheduling an existing id replaces it, so a failed call keeps the old
-    // reminder, which still matches what is saved. `on` repeats it daily.
+    // Schedule before cancelling: scheduling an existing id replaces it, so a
+    // failed call leaves the old reminders, which still match what is saved.
     await LocalNotifications.schedule({
-      notifications: [{
-        id: notificationId(page),
+      notifications: days.map((weekday) => ({
+        id: notificationId(page, weekday),
         title: navLabels[page],
         body: "Add today's entry.",
-        schedule: { on: { hour, minute }, allowWhileIdle: true },
-      }],
+        schedule: { on: { weekday, hour, minute }, allowWhileIdle: true },
+      })),
     });
   }
-  persist(page, next);
+  await cancelDays(page, unselected);
+  persist(page, { ...next, days });
   return { ok: true };
+}
+
+// Taps arrive faster than iOS answers; saves run one after another so the
+// last tap is the one that stays.
+let queue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Saves the reminder of one page and (re)schedules one weekly notification per
+ * selected weekday. Selecting the first day asks iOS for notification
+ * permission; when that is refused the reminder is saved with no days, so the
+ * stored state always matches what iOS will deliver.
+ */
+export function saveReminder(page: ReminderPage, next: Reminder): Promise<ReminderResult> {
+  const run = queue.then(() => apply(page, next));
+  // The caller gets the rejection through `run`; the chain only has to go on.
+  queue = run.then(() => undefined, () => undefined);
+  return run;
 }
