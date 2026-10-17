@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, startTransition, Suspense, useEffect, useRef, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { Skeleton } from "./components/ui/Skeleton";
 import { preloadChunks } from "./preload-chunks";
@@ -50,7 +50,10 @@ function App() {
   // progress dots into it (see StageHeadSlot).
   const [headSlot, setHeadSlot] = useState<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
-  const goToNav = (item: NavItem) => { setNav(item); setEntryView("new"); };
+  // A transition keeps the page you are on until the next one is ready. Without
+  // it React shows the Suspense fallback for at least 300 ms even when the
+  // page chunk is already loaded.
+  const goToNav = (item: NavItem) => startTransition(() => { setNav(item); setEntryView("new"); });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   // Mirror of mobileSidebarOpen for the swipe handler closure to read,
