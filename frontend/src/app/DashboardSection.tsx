@@ -1,4 +1,5 @@
 import { type CSSProperties, lazy, Suspense } from "react";
+import { Skeleton } from "../components/ui/Skeleton";
 import type { WellbeingChartView } from "./WellbeingChart";
 import {
   type DashboardConnection,
@@ -181,7 +182,7 @@ export function DashboardSection({
 
               {wellbeingChart.hasVisibleData ? (
                 <div className="relative w-full min-h-[320px] h-[360px]">
-                  <Suspense fallback={<p className="text-muted text-control">Loading chart…</p>}>
+                  <Suspense fallback={<Skeleton label="Loading chart…" lines={1} />}>
                     <WellbeingChart data={wellbeingChart.data} options={wellbeingChart.options} />
                   </Suspense>
                 </div>

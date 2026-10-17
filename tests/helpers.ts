@@ -127,6 +127,8 @@ export async function openSettingsSection(page: Page, name: string) {
 
 export async function navigateTo(page: Page, section: string) {
   await page.getByRole("button", { name: section }).click();
+  // Pages switch in a transition: the old page stays until the new one is ready.
+  await expect(page).toHaveTitle(new RegExp(`^${section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} - `, "i"));
 }
 
 /*

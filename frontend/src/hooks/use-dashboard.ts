@@ -272,12 +272,12 @@ export function useDashboard() {
   // Unfiltered queries for global (all-time) streak — only enabled when a date range is active.
   // When range is "all", the main queries already fetch all data.
   const allDiaryQuery = useQuery({
-    queryKey: ["diary-all"],
+    queryKey: ["diary", "all"],
     enabled: Boolean(dashboardFrom),
     queryFn: async () => apiFetch("/api/v1/diary", { method: "GET" }, (raw) => diaryListSchema.parse(raw).data),
   });
   const allPainQuery = useQuery({
-    queryKey: ["pain-all"],
+    queryKey: ["pain", "all"],
     enabled: Boolean(dashboardFrom),
     queryFn: async () => apiFetch("/api/v1/pain", { method: "GET" }, (raw) => painListSchema.parse(raw).data),
   });

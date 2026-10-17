@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { type UseFormReturn } from "react-hook-form";
 import { Button } from "../../components/ui/Button";
 import { DATE_TIME_INPUT } from "../../components/ui/DateInput";
@@ -132,7 +133,7 @@ export function SnapshotsSection({
       <section className="grid gap-3">
         <SectionHead title="Risk over time" variant="dashboard" aside={snapshots.length === 1 ? "1 snapshot" : `${snapshots.length} snapshots`} />
         <div className="grid gap-3 p-3 rounded-md bg-card-soft">
-          <Suspense fallback={<p className="text-muted text-control">Loading chart…</p>}>
+          <Suspense fallback={<Skeleton label="Loading chart…" lines={1} />}>
             <MonthlyRiskChart snapshots={snapshots} />
           </Suspense>
         </div>

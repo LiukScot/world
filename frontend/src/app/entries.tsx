@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Skeleton } from "../components/ui/Skeleton";
 import { groupByMonth } from "./screen-format";
 
 // Past-entries primitives shared by CBT/DBT/Diary/Pain. The summary layout
@@ -109,7 +110,7 @@ export function PastEntries({
   // own, so without this the heading sits on top of the first row.
   return (
     <div className="grid gap-5 content-start min-w-0">
-      {isLoading && <p className="text-muted text-control">{loadingText}</p>}
+      {isLoading && <Skeleton label={loadingText} />}
       {title ? <EntriesHeading>{title}</EntriesHeading> : null}
       {isEmpty ? emptyState : children}
     </div>

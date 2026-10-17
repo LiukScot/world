@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Skeleton } from "../components/ui/Skeleton";
 import { navLabels, type InlineMessage, type NavItem } from "./core";
 import { SettingsScreen } from "./SettingsPanel";
 import { PAGE_TITLE } from "./screen-helpers";
@@ -26,7 +27,7 @@ export function SettingsSection({
   // it is the heaviest thing in the realm, so it stays lazy.
   if (nav === "settings-design-system") {
     return (
-      <Suspense fallback={<p className="text-muted text-control">Loading…</p>}>
+      <Suspense fallback={<Skeleton label="Loading…" />}>
         <DesignSystemSection />
       </Suspense>
     );

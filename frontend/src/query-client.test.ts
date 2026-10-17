@@ -28,3 +28,23 @@ describe("createQueryClient offline behavior", () => {
     expect(mutationFn).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("createQueryClient caching", () => {
+  test("keeps fetched data instead of refetching it on every visit", async () => {
+    client = createQueryClient();
+    const queryFn = vi.fn().mockResolvedValue("rows");
+    await client.fetchQuery({ queryKey: ["diary"], queryFn });
+    await client.ensureQueryData({ queryKey: ["diary"], queryFn });
+    expect(queryFn).toHaveBeenCalledTimes(1);
+    expect(client.getQueryState(["diary"])?.isInvalidated).toBe(false);
+  });
+
+  test("an invalidation by key prefix reaches the dashboard's all-time queries", () => {
+    client = createQueryClient();
+    client.setQueryData(["diary", "all"], []);
+    client.setQueryData(["diary", null, null], []);
+    void client.invalidateQueries({ queryKey: ["diary"] });
+    expect(client.getQueryState(["diary", "all"])?.isInvalidated).toBe(true);
+    expect(client.getQueryState(["diary", null, null])?.isInvalidated).toBe(true);
+  });
+});
