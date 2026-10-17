@@ -25,10 +25,11 @@ export const WEEKDAYS = [
 // page and weekday must stay the same between saves.
 const notificationId = (page: ReminderPage, day: number) => (REMINDER_PAGES.indexOf(page) + 1) * 10 + day;
 
-const reminderSchema = z.object({
-  days: z.array(z.number().int().min(1).max(7)),
-  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-});
+const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+const reminderSchema = z.object({ days: z.array(z.number().int().min(1).max(7)), time: timeSchema });
+// Saved before reminders had weekdays: one daily reminder, notification id 1-5.
+const legacySchema = z.object({ enabled: z.boolean(), time: timeSchema });
+const legacyNotificationId = (page: ReminderPage) => REMINDER_PAGES.indexOf(page) + 1;
 
 export type Reminder = z.infer<typeof reminderSchema>;
 export type ReminderResult = { ok: true } | { ok: false; reason: "denied" };
@@ -40,8 +41,11 @@ export function readReminder(page: ReminderPage): Reminder {
   try {
     const raw = localStorage.getItem(storageKey(page));
     if (raw) {
-      const parsed = reminderSchema.safeParse(JSON.parse(raw));
+      const stored: unknown = JSON.parse(raw);
+      const parsed = reminderSchema.safeParse(stored);
       if (parsed.success) return parsed.data;
+      const legacy = legacySchema.safeParse(stored);
+      if (legacy.success) return { days: legacy.data.enabled ? WEEKDAYS.map((w) => w.day) : [], time: legacy.data.time };
     }
   } catch (error) {
     console.warn("Could not read the saved reminder", error);
@@ -57,8 +61,12 @@ function persist(page: ReminderPage, reminder: Reminder): void {
   }
 }
 
+// Always includes the page's legacy daily notification, so a reminder made
+// before weekdays existed stops firing once the page is saved again.
 const cancelDays = (page: ReminderPage, days: readonly number[]) =>
-  LocalNotifications.cancel({ notifications: days.map((day) => ({ id: notificationId(page, day) })) });
+  LocalNotifications.cancel({
+    notifications: [...days.map((day) => notificationId(page, day)), legacyNotificationId(page)].map((id) => ({ id })),
+  });
 
 async function apply(page: ReminderPage, next: Reminder): Promise<ReminderResult> {
   const allDays = WEEKDAYS.map((w) => w.day);

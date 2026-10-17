@@ -27,6 +27,11 @@ describe("readReminder", () => {
     expect(readReminder("diary")).toEqual(DEFAULT_REMINDER);
   });
 
+  test("reads a reminder saved before weekdays as every day", () => {
+    localStorage.setItem("world.dailyReminder.diary", JSON.stringify({ enabled: true, time: "21:00" }));
+    expect(readReminder("diary")).toEqual({ days: [2, 3, 4, 5, 6, 7, 1], time: "21:00" });
+  });
+
   test("ignores a stored value with a bad time", () => {
     localStorage.setItem("world.dailyReminder.diary", JSON.stringify({ days: [MON], time: "25:99" }));
     expect(readReminder("diary")).toEqual(DEFAULT_REMINDER);
@@ -47,7 +52,7 @@ describe("saveReminder", () => {
   test("cancels the days that are no longer selected", async () => {
     await saveReminder("diary", { days: [MON], time: "07:30" });
     const cancelled = plugin.cancel.mock.calls.at(-1)?.[0].notifications.map((n: { id: number }) => n.id);
-    expect(cancelled).toHaveLength(6);
+    expect(cancelled).toHaveLength(7);
     expect(cancelled).not.toContain(scheduled()[0].id);
   });
 
@@ -68,10 +73,16 @@ describe("saveReminder", () => {
     expect(new Set(scheduled().map((n) => n.id)).size).toBe(2);
   });
 
+  test("saving also cancels the page's legacy daily notification", async () => {
+    await saveReminder("pain", { days: [MON], time: "07:30" });
+    const ids = plugin.cancel.mock.calls.at(-1)?.[0].notifications.map((n: { id: number }) => n.id);
+    expect(ids).toContain(2);
+  });
+
   test("with no days nothing is scheduled and everything is cancelled", async () => {
     await saveReminder("diary", { days: [], time: "07:30" });
     expect(plugin.schedule).not.toHaveBeenCalled();
-    expect(plugin.cancel.mock.calls.at(-1)?.[0].notifications).toHaveLength(7);
+    expect(plugin.cancel.mock.calls.at(-1)?.[0].notifications).toHaveLength(8);
   });
 
   test("overlapping saves run in order, so the last one wins", async () => {
