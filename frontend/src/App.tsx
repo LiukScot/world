@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { Skeleton } from "./components/ui/Skeleton";
+import { preloadChunks } from "./preload-chunks";
 import { SHARED_PDF_EVENT, takeSharedPdfs } from "./shared-pdf";
 import {
   useDiary, usePain, useCbt, useDbt, useDashboard, useMemorableDays,
@@ -138,6 +139,7 @@ function App() {
   const memorable = useMemorableDays();
   const settings = useSettings();
   useAutoBackup();
+  useEffect(() => preloadChunks(), []);
   // Only fetched once you're actually in the Money realm — the health realm
   // has no use for it and shouldn't pay for the request.
   const moneyTx = useMoneyTransactions(realm === "money");
