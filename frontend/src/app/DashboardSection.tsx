@@ -19,6 +19,7 @@ import {
 import { toneOfDelta } from "./dashboard-tone";
 import { FIELD_LINE_LABEL } from "../components/ui/FieldLine";
 import { DateInput } from "../components/ui/DateInput";
+import { Switch } from "../components/ui/Switch";
 
 const WellbeingChart = lazy(() => import("./WellbeingChart"));
 
@@ -166,9 +167,9 @@ export function DashboardSection({
                       className={`inline-flex items-center gap-2 border-0 rounded-full px-3 py-1 bg-card-strong text-micro font-semibold leading-none shadow-none${hasData ? "" : " opacity-50"}`}
                       style={{ "--series-color": series.color } as CSSProperties}
                     >
-                      <input
-                        type="checkbox"
-                        className="w-auto accent-[var(--series-color,var(--accent))]"
+                      <Switch
+                        size="sm"
+                        color={series.color}
                         checked={checked && hasData}
                         disabled={!hasData}
                         onChange={(event) => onGraphToggle(series.key, event.target.checked)}

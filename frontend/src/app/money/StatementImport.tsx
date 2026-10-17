@@ -3,6 +3,7 @@ import { Button, buttonClass } from "../../components/ui/Button";
 import { InlineFeedback } from "../shared";
 import { formatCurrency, formatTxDate } from "./core";
 import type { StatementPreview } from "../../hooks/use-money-transactions";
+import { Switch } from "../../components/ui/Switch";
 
 const SOURCE_LABELS: Record<StatementPreview["parsed"]["source"], string> = {
   "revolut-robo": "Revolut robo-advisor",
@@ -184,6 +185,15 @@ export function StatementImportPreview({
         />
       )}
 
+      {replace && parsed.source === "revolut-robo" && !unaccountedOpening && (
+        <InlineFeedback
+          message={{
+            tone: "warning",
+            text: `The earlier history will be matched to the statement's opening balance of ${formatCurrency(parsed.openingBalance)}. Any difference is recorded as Variazione Valore on the preceding day, preserving earlier gains or losses when overlapping rows are replaced. Use a statement from account opening if earlier deposits or withdrawals are missing.`,
+          }}
+        />
+      )}
+
       {existingInPeriod > 0 && (
         <div className="grid gap-2">
           <InlineFeedback
@@ -195,16 +205,16 @@ export function StatementImportPreview({
             }}
           />
           <label htmlFor={replaceId} className="flex items-center gap-2 text-control text-text cursor-pointer">
-            <input
+            <Switch
               id={replaceId}
               name="replace-period"
-              type="checkbox"
+              size="sm"
               checked={replace}
               onChange={(e) => onSetReplace(e.target.checked)}
             />
             Delete those {existingInPeriod} rows first
           </label>
-          {replace && revaluationsInPeriod > 0 && (
+          {replace && revaluationsInPeriod > 0 && parsed.source !== "revolut-robo" && (
             <InlineFeedback
               message={{
                 tone: "error",
@@ -222,7 +232,7 @@ export function StatementImportPreview({
           Cancel
         </Button>
         <Button type="button" variant="primary" onClick={onConfirm} disabled={isSaving || unaccountedOpening}>
-          {isSaving ? "Importing..." : `Import ${parsed.rows.length}`}
+          {isSaving ? "Importing..." : "Import statement"}
         </Button>
       </div>
     </section>

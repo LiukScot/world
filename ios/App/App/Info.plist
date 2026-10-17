@@ -39,6 +39,8 @@
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<false/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>World uses Face ID to keep your entries private.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

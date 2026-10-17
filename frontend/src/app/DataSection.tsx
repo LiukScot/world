@@ -6,6 +6,7 @@ import { Button, buttonClass } from "../components/ui/Button";
 import { FieldLine } from "../components/ui/FieldLine";
 import { InlineFeedback, SectionHead } from "./shared";
 import type { InlineMessage } from "./core";
+import { Switch } from "../components/ui/Switch";
 
 const ROW = "flex items-center justify-between gap-5 px-[14px] py-[12px] rounded-md bg-card-strong max-sm:flex-col max-sm:items-stretch";
 // A switch stays beside its label on a phone: stacked, it reads as a separate control.
@@ -94,12 +95,10 @@ function SettingsForm({
           </span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <input
+          <Switch
             id={`${id}-enabled`}
-            type="checkbox"
             name="enabled"
             aria-describedby={`${id}-hint`}
-            className="w-4 h-4 accent-[var(--accent)] cursor-pointer"
             checked={form.enabled}
             onChange={(e) => set("enabled", e.target.checked)}
           />

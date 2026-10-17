@@ -5,6 +5,7 @@ import {
   CHART_ROW, DASH_CARD_SURFACE, DASH_SECTION, Kpi, KpiSkeleton, KPI_TIER, SectionRow, type KpiTone, type KpiDirection,
 } from "../dashboard-cards";
 import { formatCurrency, formatPercent, formatTxDate, type AssetStats, type DashboardKpis } from "./core";
+import { Switch } from "../../components/ui/Switch";
 
 const AssetCharts = lazy(() => import("./AssetCharts"));
 
@@ -94,11 +95,10 @@ export function MoneyDashboardSection({
           title="By asset"
           aside={
             <label htmlFor={showZeroId} className="inline-flex items-center gap-2 cursor-pointer text-control text-muted">
-              <input
+              <Switch
                 id={showZeroId}
-                type="checkbox"
                 name="showZeroAssets"
-                className="w-4 h-4 accent-[var(--accent)] cursor-pointer"
+                size="sm"
                 checked={showZeroAssets}
                 onChange={(e) => onToggleShowZeroAssets(e.target.checked)}
               />
