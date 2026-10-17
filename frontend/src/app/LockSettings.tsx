@@ -36,7 +36,7 @@ export function LockSettings() {
 
   return (
     <div className="grid gap-3">
-      <SectionHead title="App lock" aside="asked when the app opens" variant="accent" />
+      <SectionHead title="App lock" variant="accent" />
       <label className="flex items-center justify-between gap-3 p-3 bg-card-soft rounded-md text-control font-semibold text-text">
         Lock with Face ID
         <Switch checked={enabled} disabled={busy} onChange={(e) => void toggle(e.target.checked)} />
@@ -56,9 +56,6 @@ export function LockSettings() {
           }}
         />
       </label>
-      <p className="m-0 text-hint text-muted leading-normal">
-        World asks for Face ID when it opens. If Face ID fails, you can use your passcode.
-      </p>
       {message ? <p role="status" className="m-0 text-hint text-warning leading-normal">{message}</p> : null}
     </div>
   );
