@@ -90,8 +90,8 @@ The server copy stays the source of truth until this check passes.
 
 Tracked in #243.
 
-- [x] Daily local notification reminder per page. The chip in the page
-      head sets the time (`frontend/src/app/DailyChip.tsx`).
+- [x] Local notification reminder per page, on the weekdays picked. The
+      chip in the page head sets the days and the time (`frontend/src/app/DailyChip.tsx`).
 - [x] Optional Face ID lock for the whole app, switched on in Settings →
       Security. Asked when the app opens; a second option also asks on
       return from the background, off by default
