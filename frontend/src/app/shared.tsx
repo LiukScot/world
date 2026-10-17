@@ -119,7 +119,9 @@ export function MultiSelectField({ label, fieldKey, value, options, onChange, do
   const confirmRemoveRef = useRef<HTMLButtonElement | null>(null);
   const selectedSet = useMemo(() => new Set(selectedValues.map((entry) => entry.toLowerCase())), [selectedValues]);
   const allOptions = useMemo(() => {
-    const merged = mergeOptions(options, selectedValues);
+    const merged = mergeOptions(options, selectedValues).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
     if (!hiddenSet.size) return merged;
     return merged.filter((option) => {
       const key = option.toLowerCase();

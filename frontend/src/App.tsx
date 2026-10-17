@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
+import { Skeleton } from "./components/ui/Skeleton";
+import { SHARED_PDF_EVENT, takeSharedPdfs } from "./shared-pdf";
 import {
   useDiary, usePain, useCbt, useDbt, useDashboard, useMemorableDays,
   useMoneyDashboard, useMoneyMovements, useMoneySettings, useMoneySnapshots, useMoneyTransactions, useSettings, useAutoBackup,
@@ -139,10 +141,42 @@ function App() {
   // Only fetched once you're actually in the Money realm — the health realm
   // has no use for it and shouldn't pay for the request.
   const moneyTx = useMoneyTransactions(realm === "money");
-  const moneyMovements = useMoneyMovements(nav === "money-movements");
-  const moneySnapshots = useMoneySnapshots(nav === "money-snapshots");
+  // A PDF sent to the app from another app's share sheet opens the statement
+  // import. Checked at launch, each time the app returns to the front, and when
+  // the native side reports a new file.
+  const openSharedStatement = useRef<(file: File) => void>(() => {});
+  useEffect(() => {
+    openSharedStatement.current = (file) => {
+      goToNav("money-transactions");
+      moneyTx.statementImport.onPickFile(file);
+    };
+  });
+  useEffect(() => {
+    const check = () => {
+      takeSharedPdfs()
+        .then((files) => {
+          if (!files.length) return;
+          if (files.length > 1) toast.info("Opened the first PDF. Share the others one at a time.");
+          openSharedStatement.current(files[0]);
+        })
+        .catch((error: unknown) => {
+          console.error("Failed to read the shared PDF:", error);
+          toast.error("Couldn't open the PDF you shared.");
+        });
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    check();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener(SHARED_PDF_EVENT, check);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener(SHARED_PDF_EVENT, check);
+    };
+  }, []);
+  const moneyMovements = useMoneyMovements(realm === "money");
+  const moneySnapshots = useMoneySnapshots(realm === "money");
   const moneySettings = useMoneySettings(nav === "settings-money");
-  const moneyDashboard = useMoneyDashboard(nav === "money-dashboard");
+  const moneyDashboard = useMoneyDashboard(realm === "money");
 
   // Interactive swipe gestures: the sidebar follows the finger 1:1 during
   // the drag, then snaps open or closed on release based on how far it moved.
@@ -371,7 +405,7 @@ function App() {
 
         <StageHeadSlot.Provider value={headSlot}>
         <SectionErrorBoundary resetKey={nav}>
-        <Suspense fallback={<p className="text-muted text-control">Loading…</p>}>
+        <Suspense fallback={<Skeleton label="Loading…" />}>
         {nav === "dashboard" && (
           <DashboardSection
             dashboardFrom={dashboard.dashboardFrom} dashboardTo={dashboard.dashboardTo}

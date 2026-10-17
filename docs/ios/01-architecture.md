@@ -142,6 +142,11 @@ The server login is archived in `archive/`.
   `frontend/src/save-file.ts`. A browser gets an `<a download>`, which
   WKWebView ignores; the app writes the file with the Filesystem plugin
   and opens the share sheet.
+- **Open in World**: `Info.plist` declares the app a PDF viewer.
+  `SceneDelegate.swift` copies a shared PDF to `Caches/shared-pdf`;
+  `takeSharedPdfs` in `frontend/src/shared-pdf.ts` reads and deletes it at
+  launch, on return to the front and on the `world:shared-pdf` event, then opens the Money
+  statement import.
 - **Fonts**: `index.html` loads Manrope from Google Fonts. Offline
   this fails. The font files are bundled in `frontend/public/`.
 - **Safe areas**: notch and home indicator need

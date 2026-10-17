@@ -1,4 +1,5 @@
 import { lazy, Suspense, useId } from "react";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { EmptyState, PAGE, PAGE_TITLE } from "../screen-helpers";
 import {
   CHART_ROW, DASH_CARD_SURFACE, DASH_SECTION, Kpi, KpiSkeleton, KPI_TIER, SectionRow, type KpiTone, type KpiDirection,
@@ -81,7 +82,7 @@ export function MoneyDashboardSection({
         <section className={DASH_SECTION}>
           <SectionRow title="Charts" />
           <div className={CHART_ROW}>
-            <Suspense fallback={<p className="text-muted text-control">Loading charts…</p>}>
+            <Suspense fallback={<Skeleton label="Loading charts…" lines={1} />}>
               <AssetCharts visibleAssets={visibleAssets} />
             </Suspense>
           </div>
