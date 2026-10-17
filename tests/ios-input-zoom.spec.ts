@@ -33,6 +33,8 @@ test.describe("touch device", () => {
       // The nav lives in the drawer at this width, so every hop opens it.
       await page.getByRole("button", { name: "Open menu" }).click();
       await page.getByRole("button", { name: section, exact: true }).click();
+      // Pages switch in a transition, so the old page stays until the new one is ready.
+      await expect(page).toHaveTitle(new RegExp(`^${section} - `));
       const sizes = await fontSizes(page);
       expect(sizes.length, `${section} should render some inputs`).toBeGreaterThan(0);
       for (const { tag, size } of sizes) {
