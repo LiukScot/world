@@ -10,7 +10,6 @@ export async function apiFetch<T>(
   parser: (raw: unknown) => T
 ): Promise<T> {
   const res = await apiRequest(path, {
-    credentials: "include",
     headers: {
       ...(options.body ? { "content-type": "application/json" } : {}),
       ...(options.headers ?? {})

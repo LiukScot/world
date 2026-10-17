@@ -86,6 +86,10 @@ describe("formatting", () => {
     // the 13th. The stored value is a calendar day and must survive as one.
     expect(formatTxDate("2026-03-14")).toContain("14");
   });
+
+  test("always renders dd-mm-yyyy, whatever the browser locale", () => {
+    expect(formatTxDate("2026-03-04")).toBe("04-03-2026");
+  });
 });
 
 describe("transactionSchema", () => {

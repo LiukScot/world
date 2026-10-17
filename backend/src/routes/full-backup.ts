@@ -71,7 +71,7 @@ fullBackup.get("/xlsx", async (c) => {
   addMoneySheets(workbook, c.get("db"), c.get("userId"));
   c.header("content-type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   c.header("content-disposition", `attachment; filename="world-${new Date().toISOString().slice(0, 10)}.xlsx"`);
-  return c.body(Buffer.from(await workbook.xlsx.writeBuffer()), 200);
+  return c.body(await workbook.xlsx.writeBuffer(), 200);
 });
 
 fullBackup.post("/xlsx/import", limitUploadSize, async (c) => {

@@ -23,7 +23,7 @@ function freshDefaults(): DbtFormValues {
   return { ...defaultValues, dateTime: toLocalDateTimeValue() };
 }
 
-export function useDbt(enabled: boolean) {
+export function useDbt() {
   const queryClient = useQueryClient();
   const [editingDbt, setEditingDbt] = useState<DbtEntry | null>(null);
   const [confirmDeleteDbt, setConfirmDeleteDbt] = useState<number | null>(null);
@@ -32,7 +32,6 @@ export function useDbt(enabled: boolean) {
 
   const dbtQuery = useQuery({
     queryKey: ["dbt"],
-    enabled,
     queryFn: async () => apiFetch("/api/v1/dbt", { method: "GET" }, (raw) => dbtListSchema.parse(raw).data),
   });
 

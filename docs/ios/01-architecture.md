@@ -1,13 +1,15 @@
 # iOS migration — architecture
 
-## Today
+## Before: the server version
+
+Archived in `archive/`.
 
 ```
 browser ──HTTP──> Bun.serve ──> Hono app ──> Drizzle ──> bun:sqlite ──> data/world.sqlite
                   (server)
 ```
 
-## Target
+## Now
 
 ```
 ┌──────────────── iOS app (Capacitor) ────────────────┐
@@ -36,8 +38,8 @@ Measured on `main`: `backend/src` is 4,947 lines without tests,
 | Routes, zod schemas, helpers | as is | none |
 | Drizzle schema and queries | as is | driver import only |
 | `backend/src/db.ts` migrations | logic as is | raw calls go through a small adapter (see below) |
-| `backend/src/app.ts` | API part | static file serving, dev proxy and `node:fs` move to the server entry |
-| `backend/src/routes/auth.ts` | server only | not mounted in the app |
+| `backend/src/app.ts` | API part, now `api.ts` | the server part is archived |
+| `backend/src/routes/auth.ts` | none | archived |
 | `frontend/src` | as is | 5 `fetch` call sites, 4 file downloads, fonts |
 
 ## Backend inside the WebView
@@ -51,22 +53,15 @@ frontend calls the app directly.
 
 The frontend has one helper, `apiFetch` in `frontend/src/lib.ts`, plus
 four direct `fetch` calls in `use-settings.ts` and
-`use-money-settings.ts`. All five take a transport: `fetch` on the
-web build, `app.fetch` on the app build.
+`use-money-settings.ts`. All five go through a transport that calls
+`app.fetch`.
 
-### Split `app.ts`
+### One API, one entry
 
-`app.ts` opens the database, builds the API and serves static files
-in one module. It becomes:
-
-- a function that takes a database and returns the Hono API (shared);
-- the server entry: opens `bun:sqlite`, adds static serving, CORS,
-  security headers, rate limiting, `Bun.serve`;
-- the app entry: opens sql.js, adds the local-user middleware.
-
-`env.ts` reads `process.env` and `node:path` at import time. The
-shared part must not import it; the values it needs
-(session TTL, cookie name) are server-only.
+`backend/src/api.ts` mounts the routes on a Hono app. The only entry is
+`backend/src/local-app.ts`: it opens sql.js, sets the single local
+user and mounts the API. The server entry, `app.ts`, and the
+server-only `env.ts` are archived in `archive/`.
 
 ## Database
 
@@ -134,11 +129,11 @@ Neither carries over:
 
 In the app there is one user and one device. A middleware replaces
 `requireAuth` and sets the single local user on every request. The
-login screen is not shown. The phone's passcode and iOS file
+app has no login screen. The phone's passcode and iOS file
 encryption protect the data at rest; an optional Face ID lock on app
 open adds a second gate (see `02-build-and-signing.md`).
 
-The server keeps its login unchanged.
+The server login is archived in `archive/`.
 
 ## Frontend changes
 

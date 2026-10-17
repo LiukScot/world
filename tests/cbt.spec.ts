@@ -1,15 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { openEntryView, loginUi, navigateTo, purgeUserData, uniqueText } from "./helpers";
+import { openEntryView, openApp, navigateTo, uniqueText } from "./helpers";
 
-test.beforeEach(async ({ request, page }) => {
-  await purgeUserData(request);
-  await loginUi(page);
+test.beforeEach(async ({ page }) => {
+  await openApp(page);
   await navigateTo(page, "CBT");
   await expect(page.getByRole("heading", { name: "CBT Thought Response" })).toBeVisible();
-});
-
-test.afterEach(async ({ request }) => {
-  await purgeUserData(request);
 });
 
 test("creates, edits, and deletes a CBT thought-record entry", async ({ page }) => {

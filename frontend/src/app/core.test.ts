@@ -24,7 +24,7 @@ import {
 
 describe("formatDocumentTitle", () => {
   test("names the app when no realm is given", () => {
-    expect(formatDocumentTitle("Sign in")).toBe("Sign in - World");
+    expect(formatDocumentTitle("Loading")).toBe("Loading - World");
     expect(formatDocumentTitle()).toBe("World");
   });
 
@@ -37,7 +37,7 @@ describe("formatDocumentTitle", () => {
 describe("realms", () => {
   test("realmOf routes each prefix to its realm, unprefixed items to health", () => {
     expect(realmOf("money-dashboard")).toBe("money");
-    expect(realmOf("settings-account")).toBe("settings");
+    expect(realmOf("settings-appearance")).toBe("settings");
     expect(realmOf("dashboard")).toBe("health");
   });
 
@@ -110,6 +110,12 @@ describe("calcDeltaPercent + formatDelta", () => {
   test("formatDelta inverts on invert=true", () => {
     const out = formatDelta(10, true);
     expect(out?.className).toBe("negative");
+  });
+
+  test("formatDelta direction follows the sign, not the inversion", () => {
+    expect(formatDelta(10, true)?.direction).toBe("up");
+    expect(formatDelta(-10, true)?.direction).toBe("down");
+    expect(formatDelta(0.2)?.direction).toBe("flat");
   });
 });
 

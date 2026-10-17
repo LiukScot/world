@@ -3,9 +3,6 @@ import { Hono } from "hono";
 import { z } from "zod";
 import {
   parseJson,
-  buildSessionCookie,
-  clearSessionCookie,
-  readCookie,
   toUniqueValues,
   toCsvValue,
   mergeOptions,
@@ -13,43 +10,6 @@ import {
   emptyPainTags,
   parseLegacyPainTags,
 } from "./helpers.ts";
-import { env } from "./env.ts";
-
-describe("readCookie", () => {
-  test("returns null when no Cookie header", () => {
-    const req = new Request("http://x/");
-    expect(readCookie(req, "any")).toBeNull();
-  });
-
-  test("returns null when name missing from cookie string", () => {
-    const req = new Request("http://x/", { headers: { cookie: "foo=bar" } });
-    expect(readCookie(req, "missing")).toBeNull();
-  });
-
-  test("returns value when name present", () => {
-    const req = new Request("http://x/", { headers: { cookie: "foo=bar; baz=qux" } });
-    expect(readCookie(req, "baz")).toBe("qux");
-  });
-});
-
-describe("buildSessionCookie", () => {
-  test("includes name, sid value, HttpOnly, Path=/, SameSite=Strict, Max-Age", () => {
-    const out = buildSessionCookie("abc123");
-    expect(out).toContain(`${env.SESSION_COOKIE_NAME}=abc123`);
-    expect(out).toContain("HttpOnly");
-    expect(out).toContain("Path=/");
-    expect(out.toLowerCase()).toContain("samesite=strict");
-    expect(out).toContain("Max-Age=");
-  });
-});
-
-describe("clearSessionCookie", () => {
-  test("emits Max-Age=0 to clear cookie", () => {
-    const out = clearSessionCookie();
-    expect(out).toContain("Max-Age=0");
-    expect(out).toContain(`${env.SESSION_COOKIE_NAME}=`);
-  });
-});
 
 describe("parseJson", () => {
   test("returns parsed payload on valid body", async () => {

@@ -38,12 +38,5 @@ must be proven before building.
   backup and HealthKit. A home-screen widget is the exception: it is a
   SwiftUI extension by Apple's design, and it is the part most likely
   to break under third-party signing.
-- **Server build**: stays working. It is the source of the data to
-  import and it shares the backend code, so it costs nothing to keep.
-
-## Relation to `docs/android/`
-
-`docs/android/03-decision.md` leans to native Kotlin and asks to
-reconsider if iOS lands first. Capacitor also targets Android: the
-same `frontend/` and in-WebView backend would build an APK. That
-decision is not revisited here.
+- **Server build**: archived in [`archive/`](../../archive/README.md).
+  The backend code it shared stays, because the app runs it.

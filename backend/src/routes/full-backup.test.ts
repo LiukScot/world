@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import fullBackupRoute from "./full-backup.ts";
 import diaryRoute from "./diary.ts";
 import transactionsRoute from "./money-transactions.ts";
@@ -7,7 +6,6 @@ import { setupAuthedApp } from "../test-helpers.ts";
 
 async function setup() {
   return setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/full-backup", route: fullBackupRoute },
     { path: "/diary", route: diaryRoute },
     { path: "/money/transactions", route: transactionsRoute },

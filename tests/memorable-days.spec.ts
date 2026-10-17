@@ -1,16 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { loginUi, purgeUserData } from "./helpers";
-
-test.beforeEach(async ({ request }) => {
-  await purgeUserData(request);
-});
-
-test.afterEach(async ({ request }) => {
-  await purgeUserData(request);
-});
+import { openApp } from "./helpers";
 
 test("desktop shows calendar and list, create/edit/delete works", async ({ page }) => {
-  await loginUi(page);
+  await openApp(page);
   await page.getByRole("button", { name: "Memorable days" }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Memorable days" })).toBeVisible();
@@ -50,7 +42,7 @@ test("desktop shows calendar and list, create/edit/delete works", async ({ page 
 
 test("mobile drops the calendar and creates from the floating button", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await loginUi(page);
+  await openApp(page);
   await page.getByRole("button", { name: "Open menu" }).click();
   await page.getByRole("button", { name: "Memorable days" }).click();
 

@@ -9,35 +9,6 @@ function isoDateRefine(val: string): boolean {
   return parsed.getUTCFullYear() === year && parsed.getUTCMonth() + 1 === month && parsed.getUTCDate() === day;
 }
 
-/*
- * Emails are stored folded — user-cli has always done it on create, and now
- * registration does too — so the lookup has to fold as well or an account
- * created as "Me@Example.com" could never be signed into.
- */
-const emailField = z.string().trim().email().max(254).transform((v) => v.toLowerCase());
-
-export const loginSchema = z.object({
-  email: emailField,
-  password: z.string().min(1).max(72)
-});
-
-/*
- * The 72-byte cap is bcrypt's, kept so a password set here still verifies
- * against a legacy hash. The 8-char floor matches change-password: a new
- * account should not be allowed to start weaker than an existing one is
- * allowed to become.
- */
-export const registerSchema = z.object({
-  email: emailField,
-  password: z.string().min(8).max(72),
-  name: z.string().trim().max(120).optional().default("")
-});
-
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1).max(72),
-  newPassword: z.string().min(8).max(72)
-});
-
 // A day and a time that exist: the shape alone lets 2026-13-45 and 99:99
 // through, and the log and the charts then have no date to place the entry on.
 const entryDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(isoDateRefine, { message: "Invalid calendar date" });

@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import backupRoute from "./backup.ts";
 import diaryRoute from "./diary.ts";
 import painRoute from "./pain.ts";
@@ -7,12 +6,11 @@ import moodRoute from "./mood.ts";
 import cbtRoute from "./cbt.ts";
 import dbtRoute from "./dbt.ts";
 import memorableDaysRoute from "./memorable-days.ts";
-import { extractSessionCookie, seedUser, setupAuthedApp } from "../test-helpers.ts";
+import { sessionCookieFor, seedUser, setupAuthedApp } from "../test-helpers.ts";
 import type { SQLiteDB } from "../db.ts";
 
 async function setup() {
   const s = await setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/backup", route: backupRoute },
     { path: "/data", route: backupRoute },
     { path: "/diary", route: diaryRoute },
@@ -357,13 +355,8 @@ describe("backup data isolation (IDOR)", () => {
       headers: { "Content-Type": "application/json", cookie },
       body: JSON.stringify(diaryBody),
     });
-    await seedUser(ctx.db, { email: "other@example.com", password: "Password123!" });
-    const otherLogin = await app.request("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "other@example.com", password: "Password123!" }),
-    });
-    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+    await seedUser(ctx.db, { email: "other@example.com" });
+    const otherCookie = sessionCookieFor(ctx.db, "other@example.com");
     const res = await (
       await app.request("/backup/json", { headers: { cookie: otherCookie } })
     ).json();
@@ -430,13 +423,8 @@ describe("POST /backup/purge", () => {
     const seeded = countUserRows(ctx.rawDb, userId);
     expect(seeded).toBe(PURGE_TABLES.length);
 
-    await seedUser(ctx.db, { email: "purger@example.com", password: "Password123!" });
-    const otherLogin = await app.request("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "purger@example.com", password: "Password123!" }),
-    });
-    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+    await seedUser(ctx.db, { email: "purger@example.com" });
+    const otherCookie = sessionCookieFor(ctx.db, "purger@example.com");
     const purge = await app.request("/backup/purge", {
       method: "POST",
       headers: { cookie: otherCookie },

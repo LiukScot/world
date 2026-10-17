@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import movementsRoute from "./money-movements.ts";
 import { setupAuthedApp } from "../test-helpers.ts";
 
@@ -7,7 +6,6 @@ const VALID = { name: "Rent", direction: "expense", amount: 850, note: "" };
 
 async function setup() {
   return setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/movements", route: movementsRoute },
   ]);
 }

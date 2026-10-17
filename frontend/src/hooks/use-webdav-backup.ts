@@ -22,10 +22,9 @@ const okSchema = apiEnvelopeSchema(z.object({ ok: z.boolean() }));
 export type WebdavSettings = z.infer<typeof settingsSchema>["data"];
 export type WebdavForm = Pick<WebdavSettings, "url" | "folder" | "username" | "enabled"> & { password: string };
 
-// The constant MODE check lets the server build drop this import: it carries
-// sql.js and the backend, which that build cannot resolve.
+// Imported on use so the tests of this module do not load sql.js and the
+// backend, which only the Vite build can resolve.
 async function localDatabase() {
-  if (import.meta.env.MODE !== "device") throw new Error("The local database exists only in the iOS app");
   return (await import("../local-backend")).getLocalDatabase();
 }
 
@@ -94,12 +93,10 @@ export function isBackupDue(settings: WebdavSettings, now: Date): boolean {
 let autoBackupRunning = false;
 
 /** Runs the daily WebDAV backup when the app opens or returns to the foreground. */
-export function useAutoBackup(enabled: boolean): void {
+export function useAutoBackup(): void {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!enabled) return;
-
     const check = async () => {
       if (autoBackupRunning || document.visibilityState !== "visible") return;
       autoBackupRunning = true;
@@ -121,10 +118,10 @@ export function useAutoBackup(enabled: boolean): void {
     onVisible();
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [enabled, queryClient]);
+  }, [queryClient]);
 }
 
-export function useWebdavBackup(enabled: boolean) {
+export function useWebdavBackup() {
   const queryClient = useQueryClient();
   // A list from the previous server or folder would offer files the new one lacks.
   const refresh = () => {
@@ -135,10 +132,9 @@ export function useWebdavBackup(enabled: boolean) {
     ]);
   };
 
-  const settingsQuery = useQuery({ queryKey: SETTINGS_KEY, enabled, queryFn: fetchSettings });
+  const settingsQuery = useQuery({ queryKey: SETTINGS_KEY, queryFn: fetchSettings });
   const passwordSavedQuery = useQuery({
     queryKey: PASSWORD_KEY,
-    enabled,
     queryFn: async () => (await readPassword()) !== "",
   });
 

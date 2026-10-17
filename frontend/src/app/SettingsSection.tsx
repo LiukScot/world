@@ -1,5 +1,4 @@
 import { lazy, Suspense } from "react";
-import type { useAuth } from "../hooks/use-auth";
 import { navLabels, type InlineMessage, type NavItem } from "./core";
 import { SettingsScreen } from "./SettingsPanel";
 import { PAGE_TITLE } from "./screen-helpers";
@@ -16,7 +15,6 @@ export function SettingsSection({
 }: {
   nav: NavItem;
   money: MoneySettingsProps;
-  auth: ReturnType<typeof useAuth>;
   purgeConfirmArmed: boolean;
   purgePending: boolean;
   purgeError: InlineMessage | null;

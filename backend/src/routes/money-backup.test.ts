@@ -1,14 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import backupRoute from "./money-backup.ts";
 import preferencesRoute from "./preferences.ts";
 import transactionsRoute from "./money-transactions.ts";
 import stylesRoute from "./money-styles.ts";
-import { loginAndGetCookie, seedUser, setupAuthedApp } from "../test-helpers.ts";
+import { sessionCookieFor, seedUser, setupAuthedApp } from "../test-helpers.ts";
 
 async function setup() {
   return setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/money/backup", route: backupRoute },
     { path: "/money/data", route: backupRoute },
     { path: "/money/transactions", route: transactionsRoute },
@@ -123,7 +121,7 @@ describe("money JSON backup", () => {
   test("imports rows whose ids already belong to another account", async () => {
     const { ctx, app, cookie } = await setup();
     const other = await seedUser(ctx.db);
-    const otherCookie = await loginAndGetCookie(app, "/auth", other.email, other.password);
+    const otherCookie = sessionCookieFor(ctx.db, other.email);
 
     // Both accounts import the same file. The row ids inside it are identical,
     // and `id` is the primary key across all users, so reusing them would make

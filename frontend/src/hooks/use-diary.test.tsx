@@ -49,7 +49,7 @@ describe("useDiary toasts", () => {
 
   test("fires a success toast when a diary entry saves", async () => {
     apiFetch.mockResolvedValue({ id: 1 });
-    const { result } = renderHook(() => useDiary(true), { wrapper });
+    const { result } = renderHook(() => useDiary(), { wrapper });
 
     result.current.diaryMutation.mutate(validEntry);
 
@@ -59,7 +59,7 @@ describe("useDiary toasts", () => {
 
   test("fires an error toast when the save fails", async () => {
     apiFetch.mockRejectedValue(new Error("network down"));
-    const { result } = renderHook(() => useDiary(true), { wrapper });
+    const { result } = renderHook(() => useDiary(), { wrapper });
 
     result.current.diaryMutation.mutate(validEntry);
 

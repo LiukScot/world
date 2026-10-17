@@ -1,11 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import authRoute from "./auth.ts";
 import dbtRoute from "./dbt.ts";
-import { extractSessionCookie, seedUser, setupAuthedApp } from "../test-helpers.ts";
+import { sessionCookieFor, seedUser, setupAuthedApp } from "../test-helpers.ts";
 
 async function setup() {
   const s = await setupAuthedApp([
-    { path: "/auth", route: authRoute },
     { path: "/dbt", route: dbtRoute },
   ]);
   return { ctx: s.ctx, app: s.app, cookie: s.cookie, userId: s.user.id };
@@ -82,13 +80,8 @@ describe("GET /dbt", () => {
       headers: { "Content-Type": "application/json", cookie },
       body: JSON.stringify(validBody),
     });
-    await seedUser(ctx.db, { email: "other@example.com", password: "Password123!" });
-    const otherLogin = await app.request("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "other@example.com", password: "Password123!" }),
-    });
-    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+    await seedUser(ctx.db, { email: "other@example.com" });
+    const otherCookie = sessionCookieFor(ctx.db, "other@example.com");
     const res = await app.request("/dbt", { headers: { cookie: otherCookie } });
     const body = await res.json();
     expect(body.data).toEqual([]);
@@ -140,13 +133,8 @@ describe("PUT /dbt/:id", () => {
       body: JSON.stringify(validBody),
     });
     const { data } = await created.json();
-    await seedUser(ctx.db, { email: "other@example.com", password: "Password123!" });
-    const otherLogin = await app.request("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "other@example.com", password: "Password123!" }),
-    });
-    const otherCookie = extractSessionCookie(otherLogin.headers.get("set-cookie"));
+    await seedUser(ctx.db, { email: "other@example.com" });
+    const otherCookie = sessionCookieFor(ctx.db, "other@example.com");
     const res = await app.request(`/dbt/${data.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", cookie: otherCookie },

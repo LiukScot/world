@@ -1,137 +1,121 @@
-import { expect, type APIRequestContext, type Page } from "@playwright/test";
-
-export const e2eUser = {
-  email: process.env.E2E_EMAIL || "smoke@example.com",
-  password: process.env.E2E_PASSWORD || "Password123",
-};
+import { expect, type Page } from "@playwright/test";
 
 export function uniqueText(prefix: string): string {
   return `${prefix} ${Date.now()} ${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function loginUi(page: Page, password = e2eUser.password) {
-  await page.context().clearCookies();
+/*
+ * The app has one local user and no login.
+ * Each test gets a new browser context, so it also starts on an empty install;
+ * there is nothing to purge before or after.
+ *
+ * Wait for the shell's title rather than a heading: which realm the app
+ * restores is remembered in localStorage, hence the alternation.
+ */
+export async function openApp(page: Page) {
   await page.goto("/");
-  await page.getByLabel("Email").fill(e2eUser.email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  /*
-   * Wait for the signed-in title, which only the shell sets: logged out it
-   * is "Sign in - World" and before React mounts it is "World", so a realm
-   * name after the dash cannot appear until the session exists.
-   *
-   * Two nearer-looking signals are both wrong. The realm switcher is on the
-   * login screen too now, so it does not separate the two states. And the
-   * absence of the "Sign in" button is satisfied the instant it is clicked:
-   * the button relabels itself to "Signing in...", which does not contain
-   * the substring "Sign in", so the count drops to zero while the request
-   * is still in flight and every later step races the session.
-   *
-   * A heading would not work either: which realm the app restores is
-   * remembered in localStorage and survives a logout, the same way the
-   * theme does — hence the alternation rather than one name.
-   */
   await expect(page).toHaveTitle(/ - (Health|Money|Settings)$/);
 }
 
-export async function loginApi(request: APIRequestContext, password = e2eUser.password) {
-  const response = await request.post("/api/v1/auth/login", {
-    data: { email: e2eUser.email, password },
-  });
-  if (!response.ok()) {
-    const body = await response.text();
-    expect(
-      response.ok(),
-      `expected API login to succeed for ${e2eUser.email}; status=${response.status()} body=${body}`,
-    ).toBeTruthy();
-  }
+type DiaryRow = {
+  entryDate: string;
+  entryTime: string;
+  moodLevel: number | null;
+  depressionLevel: number | null;
+  anxietyLevel: number | null;
+  positiveMoods: string;
+  negativeMoods: string;
+  generalMoods: string;
+  description: string;
+  gratitude: string;
+};
+
+type PainRow = {
+  entryDate: string;
+  entryTime: string;
+  painLevel: number | null;
+  fatigueLevel: number | null;
+  coffeeCount: number | null;
+  area: string;
+  symptoms: string;
+  activities: string;
+  medicines: string;
+  habits: string;
+  other: string;
+  note: string;
+};
+
+type MemorableDayRow = { date: string; title: string; emoji: string; description: string };
+
+export function diaryRow(overrides: Partial<DiaryRow> = {}): DiaryRow {
+  return {
+    entryDate: "2026-03-28",
+    entryTime: "10:30",
+    moodLevel: 6,
+    depressionLevel: 3,
+    anxietyLevel: 4,
+    positiveMoods: "happy",
+    negativeMoods: "",
+    generalMoods: "tired",
+    description: uniqueText("dashboard-diary"),
+    gratitude: "coffee",
+    ...overrides,
+  };
 }
 
-export async function purgeUserData(request: APIRequestContext, password = e2eUser.password) {
-  await loginApi(request, password);
-  const response = await request.post("/api/v1/data/purge");
-  expect(response.ok(), "expected purge to succeed").toBeTruthy();
+export function painRow(overrides: Partial<PainRow> = {}): PainRow {
+  return {
+    entryDate: "2026-03-28",
+    entryTime: "11:00",
+    painLevel: 5,
+    fatigueLevel: 4,
+    coffeeCount: 1,
+    area: "head",
+    symptoms: "nausea",
+    activities: "work",
+    medicines: "200mg celebrex, 4mg sirdalud",
+    habits: "good sleep",
+    other: "",
+    note: uniqueText("dashboard-pain"),
+    ...overrides,
+  };
 }
 
-export async function seedDiaryEntry(
-  request: APIRequestContext,
-  overrides: Partial<{
-    entryDate: string;
-    entryTime: string;
-    moodLevel: number | null;
-    depressionLevel: number | null;
-    anxietyLevel: number | null;
-    positiveMoods: string;
-    negativeMoods: string;
-    generalMoods: string;
-    description: string;
-    gratitude: string;
-  }> = {},
-  password = e2eUser.password,
+export function memorableDayRow(overrides: Partial<MemorableDayRow> = {}): MemorableDayRow {
+  return { date: "2024-06-10", title: uniqueText("memorable"), emoji: "✨", description: "important date", ...overrides };
+}
+
+/**
+ * Loads health data through Settings → Data → Import JSON, the same path a
+ * person uses, then returns to the Health realm. The import replaces every
+ * health entry, so pass all the rows a test needs in one call.
+ */
+export async function seedHealth(
+  page: Page,
+  seed: { diary?: DiaryRow[]; pain?: PainRow[]; memorableDays?: MemorableDayRow[] },
 ) {
-  await loginApi(request, password);
-  const response = await request.post("/api/v1/diary", {
-    data: {
-      entryDate: "2026-03-28",
-      entryTime: "10:30",
-      moodLevel: 6,
-      depressionLevel: 3,
-      anxietyLevel: 4,
-      positiveMoods: "happy",
-      negativeMoods: "",
-      generalMoods: "tired",
-      description: uniqueText("dashboard-diary"),
-      gratitude: "coffee",
-      ...overrides,
-    },
+  const health = {
+    diary: { rows: seed.diary ?? [] },
+    pain: { rows: seed.pain ?? [] },
+    memorableDays: seed.memorableDays ?? [],
+  };
+  await openApp(page);
+  await openSettingsRealm(page);
+  await openSettingsSection(page, "Data");
+  await page.getByLabel("Import JSON").setInputFiles({
+    name: "seed.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ health })),
   });
-  expect(response.ok(), "expected diary seed to succeed").toBeTruthy();
-}
-
-export async function seedPainEntry(
-  request: APIRequestContext,
-  overrides: Partial<{
-    entryDate: string;
-    entryTime: string;
-    painLevel: number | null;
-    fatigueLevel: number | null;
-    coffeeCount: number | null;
-    area: string;
-    symptoms: string;
-    activities: string;
-    medicines: string;
-    habits: string;
-    other: string;
-    note: string;
-  }> = {},
-  password = e2eUser.password,
-) {
-  await loginApi(request, password);
-  const response = await request.post("/api/v1/pain", {
-    data: {
-      entryDate: "2026-03-28",
-      entryTime: "11:00",
-      painLevel: 5,
-      fatigueLevel: 4,
-      coffeeCount: 1,
-      area: "head",
-      symptoms: "nausea",
-      activities: "work",
-      medicines: "200mg celebrex, 4mg sirdalud",
-      habits: "good sleep",
-      other: "",
-      note: uniqueText("dashboard-pain"),
-      ...overrides,
-    },
-  });
-  expect(response.ok(), "expected pain seed to succeed").toBeTruthy();
+  await expect(page.getByText("JSON import completed.")).toBeVisible();
+  await page.getByRole("group", { name: "Switch app" }).getByRole("button", { name: "Health" }).click();
 }
 
 /** Settings is its own realm: its sections are sidebar entries reached from
  *  the switcher tile, not tabs inside a page. */
 export async function openSettingsRealm(page: Page) {
   await page.getByRole("group", { name: "Switch app" }).getByRole("button", { name: "Settings" }).click();
-  await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Appearance" })).toBeVisible();
 }
 
 /** Scoped to the sections nav: "Health" and "Money" name both a settings
@@ -139,21 +123,6 @@ export async function openSettingsRealm(page: Page) {
 export async function openSettingsSection(page: Page, name: string) {
   await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
-}
-
-export async function openAccountPanel(page: Page) {
-  const currentPasswordField = page.getByLabel("Current password");
-  if (await currentPasswordField.count()) {
-    await expect(currentPasswordField).toBeVisible();
-    return;
-  }
-
-  const accountSummary = page.locator("summary").filter({ hasText: "Account" });
-  if (await accountSummary.count()) {
-    await accountSummary.click();
-  }
-
-  await expect(currentPasswordField).toBeVisible();
 }
 
 export async function navigateTo(page: Page, section: string) {
@@ -169,27 +138,4 @@ export async function navigateTo(page: Page, section: string) {
 export async function openEntryView(page: Page, view: "new" | "history") {
   const group = page.getByRole("group", { name: "Entry or history" });
   await group.first().getByRole("button").nth(view === "new" ? 0 : 1).click();
-}
-
-export async function seedMemorableDay(
-  request: APIRequestContext,
-  overrides: Partial<{
-    date: string;
-    title: string;
-    emoji: string;
-    description: string;
-  }> = {},
-  password = e2eUser.password,
-) {
-  await loginApi(request, password);
-  const response = await request.post("/api/v1/memorable-days", {
-    data: {
-      date: "2024-06-10",
-      title: uniqueText("memorable"),
-      emoji: "✨",
-      description: "important date",
-      ...overrides,
-    },
-  });
-  expect(response.ok(), "expected memorable day seed to succeed").toBeTruthy();
 }

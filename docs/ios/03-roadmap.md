@@ -50,8 +50,8 @@ server build, and the shared API bundles for a browser target. Passed.
       that `db.ts` and the backup routes call.
 - [x] Route the five `fetch` call sites through `frontend/src/transport.ts`.
 - [x] Persist the database after every request that changes it.
-- [x] Add the build target: `vite build --mode device`, output in
-      `frontend/dist-device/`.
+- [x] Add the build target: `vite build`, output in
+      `frontend/dist/`.
 
 Check: the device build opens in desktop Chromium with no backend
 process running, an entry survives a reload, and a Playwright test
@@ -117,8 +117,6 @@ hand-written Swift.
 
 - Can the signing service issue a second profile for an app
   extension? Without it there is no widget.
-- Does the server build remain a supported target after phase 4, or
-  is it removed?
 - Which HealthKit data is wanted, and is it read, written, or both?
 - What should the widget show?
 - Should the app update itself, or is reinstalling a new IPA from the

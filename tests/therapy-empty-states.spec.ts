@@ -1,13 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { loginUi, navigateTo, openEntryView, purgeUserData } from "./helpers";
+import { navigateTo, openApp, openEntryView } from "./helpers";
 
-test.beforeEach(async ({ request, page }) => {
-  await purgeUserData(request);
-  await loginUi(page);
-});
-
-test.afterEach(async ({ request }) => {
-  await purgeUserData(request);
+test.beforeEach(async ({ page }) => {
+  await openApp(page);
 });
 
 test("shows empty states for CBT and DBT", async ({ page }) => {

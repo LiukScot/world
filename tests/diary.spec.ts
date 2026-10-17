@@ -1,15 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { loginUi, navigateTo, openEntryView, purgeUserData } from "./helpers";
+import { navigateTo, openApp, openEntryView } from "./helpers";
 
-test.beforeEach(async ({ request, page }) => {
-  await purgeUserData(request);
-  await loginUi(page);
+test.beforeEach(async ({ page }) => {
+  await openApp(page);
   await navigateTo(page, "diary");
   await expect(page.getByRole("heading", { name: "Diary" })).toBeVisible();
-});
-
-test.afterEach(async ({ request }) => {
-  await purgeUserData(request);
 });
 
 test("shows a diary empty state when there are no entries", async ({ page }) => {

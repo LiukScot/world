@@ -92,13 +92,13 @@ export function createLocalApp(sqlDb: SqlJsDatabase): LocalApp {
   // driver has the same synchronous query API.
   const db = drizzle(sqlDb, { schema }) as unknown as DrizzleDB;
 
-  const existing = db.select({ id: users.id, email: users.email, name: users.name }).from(users).orderBy(users.id).limit(1).get();
+  const existing = db.select({ id: users.id }).from(users).orderBy(users.id).limit(1).get();
   const user =
     existing ??
     db
       .insert(users)
       .values({ email: LOCAL_USER_EMAIL, passwordHash: "" })
-      .returning({ id: users.id, email: users.email, name: users.name })
+      .returning({ id: users.id })
       .get();
 
   const app = new Hono<AppEnv>();
@@ -107,13 +107,8 @@ export function createLocalApp(sqlDb: SqlJsDatabase): LocalApp {
     c.set("db", db);
     c.set("rawDb", rawDb);
     c.set("userId", user.id);
-    c.set("userEmail", user.email);
     await next();
   });
-
-  app.get("/api/v1/auth/session", (c) =>
-    c.json({ data: { authenticated: true, user: { id: user.id, email: user.email, name: user.name ?? null } } }),
-  );
 
   mountApiRoutes(app);
   app.route("/api/v1/webdav-backup", webdavBackupRoutes);

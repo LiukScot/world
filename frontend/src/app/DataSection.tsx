@@ -224,7 +224,7 @@ function FileBackupBlock() {
 }
 
 function WebdavBlocks() {
-  const backup = useWebdavBackup(true);
+  const backup = useWebdavBackup();
   const { settingsQuery, passwordSavedQuery } = backup;
 
   if (settingsQuery.error || passwordSavedQuery.error) {
@@ -250,16 +250,13 @@ function WebdavBlocks() {
   );
 }
 
-const isDevice = import.meta.env.MODE === "device";
-
 /** Settings → Data: backups of everything, in one place. */
 export function DataSection() {
   return (
     <div className="grid grid-cols-1 gap-5">
       <SectionHead title="Backup file" variant="accent" />
       <FileBackupBlock />
-      {/* The server has its own backup scripts; WebDAV is for the phone, which holds the only copy. */}
-      {isDevice ? <WebdavBlocks /> : null}
+      <WebdavBlocks />
     </div>
   );
 }

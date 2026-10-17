@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { loginUi, navigateTo } from "./helpers";
+import { navigateTo, openApp } from "./helpers";
 
 /**
  * iOS zooms the page in when you focus a form control whose text is under
@@ -26,7 +26,7 @@ test.describe("touch device", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
 
   test("every typeable control clears the iOS zoom threshold", async ({ page }) => {
-    await loginUi(page);
+    await openApp(page);
     expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
 
     for (const section of ["CBT", "DBT", "Diary", "Pain"]) {
@@ -44,7 +44,7 @@ test.describe("touch device", () => {
 
 test("a mouse keeps the compact control size", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await loginUi(page);
+  await openApp(page);
   await navigateTo(page, "CBT");
   const sizes = await fontSizes(page);
   expect(sizes.some(({ size }) => size < 16)).toBe(true);

@@ -15,7 +15,7 @@ import { MemorableDaysSection } from "./memorable-days";
 
 // Same wiring as App: the hook's return value is a fresh object every render.
 function Host() {
-  const memorable = useMemorableDays(true);
+  const memorable = useMemorableDays();
   return <MemorableDaysSection memorable={memorable} />;
 }
 

@@ -76,7 +76,7 @@ export function DashboardSection({
     return {
       label: `${card.emoji} ${card.label}`.trim(),
       value: card.formattedValue,
-      delta: delta ? { text: delta.text, tone: toneOfDelta(delta.className) } : undefined,
+      delta: delta ? { text: delta.text, tone: toneOfDelta(delta.className), direction: delta.direction } : undefined,
     };
   };
 

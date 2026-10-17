@@ -1,7 +1,7 @@
 import { lazy, Suspense, useId } from "react";
 import { EmptyState, PAGE, PAGE_TITLE } from "../screen-helpers";
 import {
-  CHART_ROW, DASH_CARD_SURFACE, DASH_SECTION, Kpi, KpiSkeleton, KPI_TIER, SectionRow, type KpiTone,
+  CHART_ROW, DASH_CARD_SURFACE, DASH_SECTION, Kpi, KpiSkeleton, KPI_TIER, SectionRow, type KpiTone, type KpiDirection,
 } from "../dashboard-cards";
 import { formatCurrency, formatPercent, formatTxDate, type AssetStats, type DashboardKpis } from "./core";
 
@@ -9,6 +9,7 @@ const AssetCharts = lazy(() => import("./AssetCharts"));
 
 // Sign and label carry the meaning; the colour only reinforces it.
 const toneOf = (n: number): KpiTone => (n > 0 ? "positive" : n < 0 ? "negative" : "flat");
+const directionOf = (n: number): KpiDirection => (n > 0 ? "up" : n < 0 ? "down" : "flat");
 
 export function MoneyDashboardSection({
   kpis,
@@ -55,6 +56,7 @@ export function MoneyDashboardSection({
               delta={{
                 text: `${formatCurrency(kpis.totalPnl)} · ${formatPercent(kpis.totalPnlPct)} all time`,
                 tone: toneOf(kpis.totalPnl),
+                direction: directionOf(kpis.totalPnl),
               }}
             />
             <div className={KPI_TIER}>

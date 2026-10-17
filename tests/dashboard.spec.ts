@@ -1,19 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { loginUi, purgeUserData, seedDiaryEntry, seedMemorableDay, seedPainEntry } from "./helpers";
+import { diaryRow, memorableDayRow, openApp, painRow, seedHealth } from "./helpers";
 
-test.beforeEach(async ({ request }) => {
-  await purgeUserData(request);
-  await seedDiaryEntry(request);
-  await seedPainEntry(request);
-});
-
-test.afterEach(async ({ request }) => {
-  await purgeUserData(request);
-});
-
-test("explains the empty dashboard state", async ({ page, request }) => {
-  await purgeUserData(request);
-  await loginUi(page);
+test("explains the empty dashboard state", async ({ page }) => {
+  await openApp(page);
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   await expect(page.getByText("No health entries yet")).toBeVisible();
@@ -22,56 +11,63 @@ test("explains the empty dashboard state", async ({ page, request }) => {
 });
 
 test("renders dashboard data and supports chart toggles", async ({ page }) => {
-  await seedDiaryEntry(page.request, {
-    entryDate: "2026-03-25",
-    entryTime: "09:00",
-    moodLevel: 4,
-    depressionLevel: 4,
-    anxietyLevel: 3,
-    description: "tired but stable",
-  });
-  await seedPainEntry(page.request, {
-    entryDate: "2026-03-25",
-    entryTime: "09:30",
-    painLevel: 3,
-    fatigueLevel: 2,
-    coffeeCount: 1,
-    note: "manageable morning",
-  });
-  await seedDiaryEntry(page.request, {
-    entryDate: "2026-03-26",
-    entryTime: "09:00",
-    moodLevel: 3,
-    depressionLevel: 6,
-    anxietyLevel: 7,
-    description: "stressful day",
-  });
-  await seedPainEntry(page.request, {
-    entryDate: "2026-03-26",
-    entryTime: "09:30",
-    painLevel: 7,
-    fatigueLevel: 8,
-    coffeeCount: 4,
-    note: "pain spike after poor sleep",
-  });
-  await seedDiaryEntry(page.request, {
-    entryDate: "2026-03-27",
-    entryTime: "09:00",
-    moodLevel: 8,
-    depressionLevel: 2,
-    anxietyLevel: 2,
-    description: "felt much calmer",
-  });
-  await seedPainEntry(page.request, {
-    entryDate: "2026-03-27",
-    entryTime: "09:30",
-    painLevel: 2,
-    fatigueLevel: 3,
-    coffeeCount: 0,
-    note: "easy day",
-  });
   await page.setViewportSize({ width: 1400, height: 1000 });
-  await loginUi(page);
+  await seedHealth(page, {
+    diary: [
+      diaryRow(),
+      diaryRow({
+        entryDate: "2026-03-25",
+        entryTime: "09:00",
+        moodLevel: 4,
+        depressionLevel: 4,
+        anxietyLevel: 3,
+        description: "tired but stable",
+      }),
+      diaryRow({
+        entryDate: "2026-03-26",
+        entryTime: "09:00",
+        moodLevel: 3,
+        depressionLevel: 6,
+        anxietyLevel: 7,
+        description: "stressful day",
+      }),
+      diaryRow({
+        entryDate: "2026-03-27",
+        entryTime: "09:00",
+        moodLevel: 8,
+        depressionLevel: 2,
+        anxietyLevel: 2,
+        description: "felt much calmer",
+      }),
+    ],
+    pain: [
+      painRow(),
+      painRow({
+        entryDate: "2026-03-25",
+        entryTime: "09:30",
+        painLevel: 3,
+        fatigueLevel: 2,
+        coffeeCount: 1,
+        note: "manageable morning",
+      }),
+      painRow({
+        entryDate: "2026-03-26",
+        entryTime: "09:30",
+        painLevel: 7,
+        fatigueLevel: 8,
+        coffeeCount: 4,
+        note: "pain spike after poor sleep",
+      }),
+      painRow({
+        entryDate: "2026-03-27",
+        entryTime: "09:30",
+        painLevel: 2,
+        fatigueLevel: 3,
+        coffeeCount: 0,
+        note: "easy day",
+      }),
+    ],
+  });
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   await expect(page.getByText("Overview", { exact: true })).toHaveCount(0);
@@ -130,18 +126,14 @@ test("renders dashboard data and supports chart toggles", async ({ page }) => {
   await expect(page.getByRole("button", { name: "1 week" })).toHaveAttribute("aria-pressed", "true");
 });
 
-test("shows anniversary cards above averages", async ({ page, request }) => {
+test("shows anniversary cards above averages", async ({ page }) => {
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const dd = String(now.getDate()).padStart(2, "0");
-  await seedMemorableDay(request, {
-    date: `${yyyy}-${mm}-${dd}`,
-    title: "Wedding",
-    emoji: "💍",
-    description: "civil ceremony",
+  await seedHealth(page, {
+    memorableDays: [memorableDayRow({ date: `${yyyy}-${mm}-${dd}`, title: "Wedding", emoji: "💍", description: "civil ceremony" })],
   });
-  await loginUi(page);
 
   await expect(page.getByText("Anniversaries today")).toBeVisible();
   await expect(page.getByText("💍 Wedding")).toBeVisible();

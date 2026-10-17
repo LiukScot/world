@@ -17,7 +17,7 @@ const EMPTY_MOOD_OPTIONS = {
   general_moods: [] as string[],
 };
 
-export function useDiary(enabled: boolean) {
+export function useDiary() {
   const queryClient = useQueryClient();
   const [editingDiary, setEditingDiary] = useState<DiaryEntry | null>(null);
   const [confirmDeleteDiary, setConfirmDeleteDiary] = useState<number | null>(null);
@@ -26,13 +26,11 @@ export function useDiary(enabled: boolean) {
 
   const diaryQuery = useQuery({
     queryKey: ["diary"],
-    enabled,
     queryFn: async () => apiFetch("/api/v1/diary", { method: "GET" }, (raw) => diaryListSchema.parse(raw).data),
   });
 
   const moodOptionsQuery = useQuery({
     queryKey: ["mood-options"],
-    enabled,
     queryFn: async () => apiFetch("/api/v1/mood/options", { method: "GET" }, (raw) => moodOptionsSchema.parse(raw).data),
   });
 

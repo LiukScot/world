@@ -1,11 +1,11 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
-import { openSettingsRealm, openSettingsSection } from "./helpers";
+import { diaryRow, openEntryView, openSettingsRealm, openSettingsSection, seedHealth } from "./helpers";
 
 /*
- * The device build has no server. These run against static files, so every
- * API call has to be answered by the backend running inside the page.
+ * The app has no server. These run against static files, so every API call
+ * has to be answered by the backend running inside the page.
  */
-test("opens signed in, saves an entry, and keeps it after a reload", async ({ page }) => {
+test("opens with no login, saves an entry, and keeps it after a reload", async ({ page }) => {
   const escaped: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).pathname.startsWith("/api/")) escaped.push(request.url());
@@ -57,6 +57,35 @@ test("a JSON export restores into a fresh install", async ({ page, browser, base
     await phone.getByRole("button", { name: "CBT", exact: true }).click();
     await phone.getByRole("button", { name: "History" }).click();
     await expect(phone.locator("details").filter({ hasText: "carried over in a backup" })).toBeVisible();
+  } finally {
+    await fresh.close();
+  }
+});
+
+test("an XLSX export restores into a fresh install", async ({ page, browser, baseURL }) => {
+  // The spreadsheet carries the diary and pain log, not CBT or DBT entries.
+  const entry = diaryRow({ description: "carried over in a spreadsheet" });
+  await seedHealth(page, { diary: [entry] });
+
+  await openSettingsRealm(page);
+  await openSettingsSection(page, "Data");
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export XLSX" }).click();
+  const backupPath = await (await downloading).path();
+
+  const fresh = await browser.newContext({ baseURL });
+  try {
+    const phone = await fresh.newPage();
+    await phone.goto("/");
+    await openSettingsRealm(phone);
+    await openSettingsSection(phone, "Data");
+    await phone.getByLabel("Import XLSX").setInputFiles(backupPath);
+    await expect(phone.getByText("Spreadsheet import completed.")).toBeVisible();
+
+    await phone.getByRole("group", { name: "Switch app" }).getByRole("button", { name: "Health" }).click();
+    await phone.getByRole("button", { name: "Diary" }).click();
+    await openEntryView(phone, "history");
+    await expect(phone.getByText("carried over in a spreadsheet").first()).toBeVisible();
   } finally {
     await fresh.close();
   }

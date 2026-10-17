@@ -229,8 +229,8 @@ function buildConnections(days: DashboardDay[]): DashboardConnection[] {
   });
 }
 
-export function useDashboard(enabled: boolean) {
-  const { prefsQuery, savePrefsPatch } = usePrefs(enabled);
+export function useDashboard() {
+  const { prefsQuery, savePrefsPatch } = usePrefs();
   const [dashboardBoundsOverride, setDashboardBoundsOverride] = useState<{ from: string; to: string } | null>(null);
   const [activeQuickRangeOverride, setActiveQuickRangeOverride] = useState<DashboardQuickRange | null>(null);
   const [graphSelectionOverride, setGraphSelectionOverride] = useState<Record<WellbeingSeriesKey, boolean> | null>(null);
@@ -255,7 +255,6 @@ export function useDashboard(enabled: boolean) {
 
   const diaryQuery = useQuery({
     queryKey: ["diary", extFrom || null, dashboardTo || null],
-    enabled,
     queryFn: async () => {
       const qs = extFrom ? `?from=${extFrom}&to=${dashboardTo}` : "";
       return apiFetch(`/api/v1/diary${qs}`, { method: "GET" }, (raw) => diaryListSchema.parse(raw).data);
@@ -264,7 +263,6 @@ export function useDashboard(enabled: boolean) {
 
   const painQuery = useQuery({
     queryKey: ["pain", extFrom || null, dashboardTo || null],
-    enabled,
     queryFn: async () => {
       const qs = extFrom ? `?from=${extFrom}&to=${dashboardTo}` : "";
       return apiFetch(`/api/v1/pain${qs}`, { method: "GET" }, (raw) => painListSchema.parse(raw).data);
@@ -275,12 +273,12 @@ export function useDashboard(enabled: boolean) {
   // When range is "all", the main queries already fetch all data.
   const allDiaryQuery = useQuery({
     queryKey: ["diary-all"],
-    enabled: enabled && Boolean(dashboardFrom),
+    enabled: Boolean(dashboardFrom),
     queryFn: async () => apiFetch("/api/v1/diary", { method: "GET" }, (raw) => diaryListSchema.parse(raw).data),
   });
   const allPainQuery = useQuery({
     queryKey: ["pain-all"],
-    enabled: enabled && Boolean(dashboardFrom),
+    enabled: Boolean(dashboardFrom),
     queryFn: async () => apiFetch("/api/v1/pain", { method: "GET" }, (raw) => painListSchema.parse(raw).data),
   });
   const activeQuickRange = activeQuickRangeOverride ?? restoredRange;
