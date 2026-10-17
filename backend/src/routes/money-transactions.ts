@@ -104,7 +104,6 @@ moneyTransactions.post("/import", limitImportSize, async (c) => {
   );
 
   const apply = rawDb.transaction(() => {
-    let reconciled = 0;
     if (replace && body.roboOpeningBalance !== undefined) {
       const earlier = db.select({
         count: sql<number>`count(*)`,
@@ -127,7 +126,6 @@ moneyTransactions.post("/import", limitImportSize, async (c) => {
           buyValue: 0, pnl: difference, currentValue: difference,
           note: `Opening balance reconciliation for the statement starting ${replace.from}.`,
         }).run();
-        reconciled = 1;
       }
     }
     const deleted = replace
@@ -185,7 +183,7 @@ moneyTransactions.post("/import", limitImportSize, async (c) => {
         )
         .run();
     }
-    return { inserted: fresh.length + reconciled, skipped: body.rows.length - fresh.length, deleted };
+    return { inserted: fresh.length, skipped: body.rows.length - fresh.length, deleted };
   });
 
   const result = apply();

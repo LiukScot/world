@@ -213,7 +213,7 @@ export function StatementImportPreview({
             />
             Delete those {existingInPeriod} rows first
           </label>
-          {replace && revaluationsInPeriod > 0 && (
+          {replace && revaluationsInPeriod > 0 && parsed.source !== "revolut-robo" && (
             <InlineFeedback
               message={{
                 tone: "error",
