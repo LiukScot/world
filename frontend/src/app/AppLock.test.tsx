@@ -4,6 +4,7 @@ import { act, render, screen } from "@testing-library/react";
 const lock = vi.hoisted(() => ({
   authenticate: vi.fn(),
   enabled: true,
+  onResume: true,
   handler: null as null | ((state: { isActive: boolean }) => void),
 }));
 
@@ -18,6 +19,7 @@ vi.mock("@capacitor/app", () => ({
 vi.mock("../app-lock", () => ({
   authenticate: lock.authenticate,
   readLockEnabled: () => lock.enabled,
+  readLockOnResume: () => lock.onResume,
 }));
 
 import { AppLock } from "./AppLock";
@@ -30,6 +32,7 @@ const renderLock = async () => {
 beforeEach(() => {
   vi.clearAllMocks();
   lock.enabled = true;
+  lock.onResume = true;
   lock.authenticate.mockResolvedValue({ ok: true });
 });
 
@@ -65,6 +68,13 @@ describe("AppLock", () => {
     await act(async () => lock.handler?.({ isActive: false }));
     await act(async () => lock.handler?.({ isActive: true }));
     expect(lock.authenticate).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not lock on background when only the startup lock is chosen", async () => {
+    lock.onResume = false;
+    await renderLock();
+    await act(async () => lock.handler?.({ isActive: false }));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   test("never locks while the setting is off", async () => {

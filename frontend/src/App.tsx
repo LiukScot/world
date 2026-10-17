@@ -10,6 +10,7 @@ import { SectionErrorBoundary } from "./app/ErrorBoundary";
 import { EntryViewTabs, type EntryView } from "./app/entries";
 import { StageHeadSlot } from "./app/stage-head-slot";
 import { DailyChip } from "./app/DailyChip";
+import { REMINDER_PAGES, type ReminderPage } from "./reminder";
 import {
   entryViewLabels, formatDocumentTitle, hasEntryViews, navItemsByRealm, navLabels, readStoredRealm, realmOf,
   REALM_STORAGE_KEY, type NavItem,
@@ -31,8 +32,7 @@ const MovementsSection = lazy(() => import("./app/money/MovementsSection").then(
 const SnapshotsSection = lazy(() => import("./app/money/SnapshotsSection").then((m) => ({ default: m.SnapshotsSection })));
 const MoneyDashboardSection = lazy(() => import("./app/money/MoneyDashboardSection").then((m) => ({ default: m.MoneyDashboardSection })));
 
-// The pages where logging something is the daily habit the reminder is for.
-const REMINDER_PAGES: readonly NavItem[] = ["diary", "pain", "cbt", "dbt", "money-snapshots"];
+const isReminderPage = (nav: NavItem): nav is ReminderPage => (REMINDER_PAGES as readonly string[]).includes(nav);
 
 function App() {
   // The realm is derived from the nav item (money's items are `money-`
@@ -362,7 +362,7 @@ function App() {
             {/* No text-box trim here: truncate clips at the line box, and a
                 box trimmed to the baseline cuts every descender. */}
             <span className="min-w-0 flex-1 text-title font-bold tracking-tight text-text truncate">{navLabels[nav]}</span>
-            {REMINDER_PAGES.includes(nav) ? <DailyChip /> : null}
+            {isReminderPage(nav) ? <DailyChip key={nav} page={nav} /> : null}
           </div>
           {/* Second row, inside the sticky strip: switching view is
               navigation, and navigation must not scroll away. */}

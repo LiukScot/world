@@ -1,6 +1,7 @@
 import { NativeBiometric } from "@capgo/capacitor-native-biometric";
 
 const STORAGE_KEY = "world.faceIdLock";
+const RESUME_KEY = "world.faceIdLockOnResume";
 
 export type AuthResult = { ok: true } | { ok: false; reason: "unavailable" | "failed" };
 
@@ -19,6 +20,25 @@ export function saveLockEnabled(enabled: boolean): void {
     else localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.warn("Could not save the lock setting", error);
+  }
+}
+
+/** Whether returning from the background also asks. Off unless chosen: the lock then asks only at startup. */
+export function readLockOnResume(): boolean {
+  try {
+    return localStorage.getItem(RESUME_KEY) === "1";
+  } catch (error) {
+    console.warn("Could not read the lock-on-return setting", error);
+    return false;
+  }
+}
+
+export function saveLockOnResume(enabled: boolean): void {
+  try {
+    if (enabled) localStorage.setItem(RESUME_KEY, "1");
+    else localStorage.removeItem(RESUME_KEY);
+  } catch (error) {
+    console.warn("Could not save the lock-on-return setting", error);
   }
 }
 

@@ -20,14 +20,14 @@ describe("LockSettings", () => {
   test("turns the lock on after Face ID succeeds", async () => {
     auth.authenticate.mockResolvedValue({ ok: true });
     render(<LockSettings />);
-    await userEvent.click(screen.getByRole("checkbox", { name: /lock with face id/i }));
+    await userEvent.click(screen.getByRole("switch", { name: /lock with face id/i }));
     await waitFor(() => expect(readLockEnabled()).toBe(true));
   });
 
   test("keeps the lock off and explains why when Face ID is unavailable", async () => {
     auth.authenticate.mockResolvedValue({ ok: false, reason: "unavailable" });
     render(<LockSettings />);
-    await userEvent.click(screen.getByRole("checkbox", { name: /lock with face id/i }));
+    await userEvent.click(screen.getByRole("switch", { name: /lock with face id/i }));
     expect(await screen.findByRole("status")).toHaveTextContent(/not available/i);
     expect(readLockEnabled()).toBe(false);
   });

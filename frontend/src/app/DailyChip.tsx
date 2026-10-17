@@ -1,17 +1,18 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { Switch } from "../components/ui/Switch";
 import { getErrorMessage } from "../lib";
-import { readReminder, saveReminder, type Reminder } from "../reminder";
+import { readReminder, saveReminder, type Reminder, type ReminderPage } from "../reminder";
 
 const REMINDER_DENIED =
   "Notifications are off for World. Turn them on in iOS Settings → World → Notifications, then switch the reminder on again.";
 
 // Lives in the mobile page head, so every page carries it. The panel floats
 // under the head instead of pushing the page down.
-export function DailyChip() {
+export function DailyChip({ page }: { page: ReminderPage }) {
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [reminder, setReminder] = useState<Reminder>(readReminder);
+  const [reminder, setReminder] = useState<Reminder>(() => readReminder(page));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -36,12 +37,12 @@ export function DailyChip() {
     setBusy(true);
     setMessage(null);
     try {
-      const result = await saveReminder(next);
+      const result = await saveReminder(page, next);
       if (!result.ok) setMessage(REMINDER_DENIED);
     } catch (error) {
       setMessage(`The reminder could not be saved: ${getErrorMessage(error)}`);
     } finally {
-      setReminder(readReminder());
+      setReminder(readReminder(page));
       setBusy(false);
     }
   };
@@ -65,8 +66,7 @@ export function DailyChip() {
         <div id={panelId} role="group" aria-label="Daily reminder" className="absolute right-5 top-full mt-2 z-20 grid gap-3 w-[min(320px,calc(100vw-40px))] p-4 bg-card border border-border rounded-md">
           <label className="flex items-center justify-between gap-3 text-control font-semibold text-text">
             Daily reminder
-            <input
-              type="checkbox"
+            <Switch
               checked={reminder.enabled}
               disabled={busy}
               onChange={(e) => void updateReminder({ ...reminder, enabled: e.target.checked })}

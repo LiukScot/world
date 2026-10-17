@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { App as CapacitorApp } from "@capacitor/app";
-import { authenticate, readLockEnabled, type AuthResult } from "../app-lock";
+import { authenticate, readLockEnabled, readLockOnResume, type AuthResult } from "../app-lock";
 import { Button } from "../components/ui/Button";
 
 // The Face ID sheet itself pauses the app, so events that arrive while it is
@@ -35,7 +35,7 @@ export function AppLock({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const listener = CapacitorApp.addListener("appStateChange", ({ isActive }) => {
-      if (askingRef.current || !readLockEnabled()) return;
+      if (askingRef.current || !readLockEnabled() || !readLockOnResume()) return;
       if (!isActive && !lockedRef.current) {
         lockedRef.current = true;
         askOnResumeRef.current = true;

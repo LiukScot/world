@@ -1,8 +1,15 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { z } from "zod";
+import { navLabels, type NavItem } from "./app/core";
 
-const STORAGE_KEY = "world.dailyReminder";
-const NOTIFICATION_ID = 1;
+/** The pages that carry a reminder, each with its own time and notification. */
+export const REMINDER_PAGES = ["diary", "pain", "cbt", "dbt", "money-snapshots"] as const satisfies readonly NavItem[];
+export type ReminderPage = (typeof REMINDER_PAGES)[number];
+
+const storageKey = (page: ReminderPage) => `world.dailyReminder.${page}`;
+// iOS replaces a pending notification that has the same id, so a page's id
+// must stay the same between saves.
+const notificationId = (page: ReminderPage) => REMINDER_PAGES.indexOf(page) + 1;
 
 const reminderSchema = z.object({
   enabled: z.boolean(),
@@ -14,9 +21,9 @@ export type ReminderResult = { ok: true } | { ok: false; reason: "denied" };
 
 export const DEFAULT_REMINDER: Reminder = { enabled: false, time: "20:00" };
 
-export function readReminder(): Reminder {
+export function readReminder(page: ReminderPage): Reminder {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(page));
     if (raw) {
       const parsed = reminderSchema.safeParse(JSON.parse(raw));
       if (parsed.success) return parsed.data;
@@ -27,30 +34,30 @@ export function readReminder(): Reminder {
   return DEFAULT_REMINDER;
 }
 
-function persist(reminder: Reminder): void {
+function persist(page: ReminderPage, reminder: Reminder): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reminder));
+    localStorage.setItem(storageKey(page), JSON.stringify(reminder));
   } catch (error) {
     console.warn("Could not save the reminder", error);
   }
 }
 
 /**
- * Saves the reminder and (re)schedules the daily notification. Turning it on
+ * Saves the reminder of one page and (re)schedules the daily notification. Turning it on
  * asks iOS for notification permission; when that is refused the reminder is
  * saved as off, so the stored state always matches what iOS will deliver.
  */
-export async function saveReminder(next: Reminder): Promise<ReminderResult> {
+export async function saveReminder(page: ReminderPage, next: Reminder): Promise<ReminderResult> {
   if (!next.enabled) {
-    await LocalNotifications.cancel({ notifications: [{ id: NOTIFICATION_ID }] });
+    await LocalNotifications.cancel({ notifications: [{ id: notificationId(page) }] });
   } else {
     let { display } = await LocalNotifications.checkPermissions();
     if (display === "prompt" || display === "prompt-with-rationale") {
       display = (await LocalNotifications.requestPermissions()).display;
     }
     if (display !== "granted") {
-      await LocalNotifications.cancel({ notifications: [{ id: NOTIFICATION_ID }] });
-      persist({ ...next, enabled: false });
+      await LocalNotifications.cancel({ notifications: [{ id: notificationId(page) }] });
+      persist(page, { ...next, enabled: false });
       return { ok: false, reason: "denied" };
     }
     const [hour, minute] = next.time.split(":").map(Number);
@@ -58,13 +65,13 @@ export async function saveReminder(next: Reminder): Promise<ReminderResult> {
     // reminder, which still matches what is saved. `on` repeats it daily.
     await LocalNotifications.schedule({
       notifications: [{
-        id: NOTIFICATION_ID,
-        title: "World",
+        id: notificationId(page),
+        title: navLabels[page],
         body: "Add today's entry.",
         schedule: { on: { hour, minute }, allowWhileIdle: true },
       }],
     });
   }
-  persist(next);
+  persist(page, next);
   return { ok: true };
 }

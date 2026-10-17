@@ -237,6 +237,14 @@ Soft, tinted pills that read as an invitation, not a command.
 - **Success:** a brief mint tint after a save.
 - **Focus:** the 2px accent ring. Colour and background fade over 150ms.
 
+### Switch
+Replaces the native checkbox for every on/off setting.
+- **Shape:** full-pill track, 42px × 24px (30px × 18px small), with a round thumb.
+- **Off:** text colour at 16% over the surface, muted thumb.
+- **On:** accent at 45% over the surface, accent thumb sliding right. A per-use colour (the dashboard series chips) overrides the accent.
+- **Behaviour:** a real checkbox with `role="switch"` sits invisibly on top, so label, Space key and screen readers work unchanged. Disabled drops to 50%.
+- **Focus:** the 2px accent ring around the track. Motion is 150ms and off under reduced motion.
+
 ### Chips
 - **Style:** pill, 32px tall, hint-size text, Control background, muted text.
 - **Selected:** solid accent fill with Night Ink text and weight 600.
