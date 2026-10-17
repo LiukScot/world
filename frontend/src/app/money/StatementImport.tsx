@@ -3,6 +3,7 @@ import { Button, buttonClass } from "../../components/ui/Button";
 import { InlineFeedback } from "../shared";
 import { formatCurrency, formatTxDate } from "./core";
 import type { StatementPreview } from "../../hooks/use-money-transactions";
+import { Switch } from "../../components/ui/Switch";
 
 const SOURCE_LABELS: Record<StatementPreview["parsed"]["source"], string> = {
   "revolut-robo": "Revolut robo-advisor",
@@ -204,10 +205,10 @@ export function StatementImportPreview({
             }}
           />
           <label htmlFor={replaceId} className="flex items-center gap-2 text-control text-text cursor-pointer">
-            <input
+            <Switch
               id={replaceId}
               name="replace-period"
-              type="checkbox"
+              size="sm"
               checked={replace}
               onChange={(e) => onSetReplace(e.target.checked)}
             />

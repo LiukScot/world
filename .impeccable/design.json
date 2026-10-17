@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-03T12:13:52.901229+00:00",
+  "generatedAt": "2026-10-17T07:49:22.666032+00:00",
   "title": "Design System: World",
   "extensions": {
     "colorMeta": {
@@ -487,6 +487,14 @@
       "description": "Mood/pain metric as nine buttons, filled up to the value in band colours.",
       "html": "<div class=\"ds-scale\" role=\"group\" aria-label=\"Mood\"><button class=\"ds-s ds-low\">1</button><button class=\"ds-s ds-low\">2</button><button class=\"ds-s ds-low\">3</button><button class=\"ds-s ds-mid\" aria-pressed=\"true\">4</button><button class=\"ds-s\">5</button><button class=\"ds-s\">6</button><button class=\"ds-s\">7</button><button class=\"ds-s\">8</button><button class=\"ds-s\">9</button></div>",
       "css": ":host{--bg:#121214;--card-soft:#1e1e22;--card-strong:#1a1a1d;--control:#34343d;--control-hover:#41414c;--border:#48484f;--text:#f5f5f7;--muted:#a1a1ad;--muted-soft:#6d6d78;--accent:#ff5e8a;--danger:#ff5a7f;--success:#6fe1b0;--warning:#f5a623;--ring:color-mix(in srgb,var(--accent) 38%,transparent);font-family:Manrope,system-ui,sans-serif;color:var(--text)} .ds-scale{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;max-width:420px}.ds-s{height:44px;padding:0;font:700 16px Manrope,system-ui,sans-serif;border-radius:10px;border:1px solid color-mix(in srgb,var(--border) 40%,transparent);background:var(--card-strong);color:var(--muted);cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease}.ds-s:hover{color:var(--text);border-color:var(--border)}.ds-s.ds-low{background:var(--success);border-color:var(--success);color:#0a2018}.ds-s.ds-mid{background:var(--warning);border-color:var(--warning);color:#2a1a00}.ds-s:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring)}"
+    },
+    {
+      "name": "Switch",
+      "kind": "custom",
+      "refersTo": "switch",
+      "description": "On/off setting. A real checkbox with role=switch sits invisibly on top of a pill track and a sliding thumb.",
+      "html": "<label class=\"ds-switch\"><input class=\"ds-switch-input\" type=\"checkbox\" role=\"switch\" checked><span class=\"ds-switch-track\"></span><span class=\"ds-switch-thumb\"></span></label>",
+      "css": ".ds-switch { position: relative; display: inline-flex; flex: none; } .ds-switch-input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; } .ds-switch-track { display: block; width: 42px; height: 24px; border-radius: 9999px; pointer-events: none; background: color-mix(in srgb, var(--text) 16%, transparent); transition: background 150ms ease; } .ds-switch-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 9999px; pointer-events: none; background: var(--muted); transition: transform 150ms ease, background 150ms ease; } .ds-switch-input:checked ~ .ds-switch-track { background: color-mix(in srgb, var(--accent) 45%, transparent); } .ds-switch-input:checked ~ .ds-switch-thumb { background: var(--accent); transform: translateX(18px); } .ds-switch-input:focus-visible ~ .ds-switch-track { box-shadow: 0 0 0 2px var(--ring); } .ds-switch-input:disabled ~ .ds-switch-track, .ds-switch-input:disabled ~ .ds-switch-thumb { opacity: 0.5; } @media (prefers-reduced-motion: reduce) { .ds-switch-track, .ds-switch-thumb { transition: none; } }"
     }
   ],
   "narrative": {

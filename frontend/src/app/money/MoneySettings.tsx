@@ -5,6 +5,7 @@ import { InlineFeedback, SectionHead } from "../shared";
 import { EmptyState } from "../screen-helpers";
 import type { InlineMessage } from "../core";
 import { RISK_LEVELS, type RiskLevel, type StylesMap } from "./core";
+import { Switch } from "../../components/ui/Switch";
 
 export type MoneySettingsProps = {
   showZeroAssets: boolean;
@@ -38,12 +39,10 @@ function PreferencesBlock({ showZeroAssets, onToggleShowZeroAssets }: Pick<Money
         <span id={hintId} className="text-xs text-muted">Keep assets you have fully sold off visible in lists and charts. Same switch as the one on the dashboard.</span>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <input
+        <Switch
           id={id}
-          type="checkbox"
           name="showZeroAssets"
           aria-describedby={hintId}
-          className="w-4 h-4 accent-[var(--accent)] cursor-pointer"
           checked={showZeroAssets}
           onChange={(e) => onToggleShowZeroAssets(e.target.checked)}
         />

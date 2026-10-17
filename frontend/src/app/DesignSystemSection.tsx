@@ -3,6 +3,7 @@ import { PAGE_TITLE } from "./screen-helpers";
 import { STAGE, StageField, StageHead, StageScale, StageStepper } from "./staged";
 import { FIELD_LINE_INPUT } from "../components/ui/FieldLine";
 import { Button } from "../components/ui/Button";
+import { Switch } from "../components/ui/Switch";
 import { DATE_TIME_INPUT } from "../components/ui/DateInput";
 import { FieldLine } from "../components/ui/FieldLine";
 import { SectionHead } from "./shared";
@@ -152,6 +153,24 @@ export function DesignSystemSection() {
               <Button variant="primary">Primary</Button>
               <Button variant="success">✓ Saved</Button>
               <Button variant="danger">Danger</Button>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <SectionHead title="Switch" aside="On / off" variant="ds" />
+            <div className="flex gap-4 items-center flex-wrap">
+              <label className="inline-flex items-center gap-2 text-control text-text">
+                <Switch defaultChecked /> On
+              </label>
+              <label className="inline-flex items-center gap-2 text-control text-text">
+                <Switch /> Off
+              </label>
+              <label className="inline-flex items-center gap-2 text-control text-muted">
+                <Switch size="sm" defaultChecked /> Small
+              </label>
+              <label className="inline-flex items-center gap-2 text-control text-muted">
+                <Switch disabled /> Disabled
+              </label>
             </div>
           </section>
 

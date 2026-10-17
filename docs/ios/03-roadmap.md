@@ -90,11 +90,17 @@ The server copy stays the source of truth until this check passes.
 
 Tracked in #243.
 
-- [ ] Local notification reminders, configurable in Settings.
-- [ ] Optional Face ID lock on app open.
+- [x] Daily local notification reminder per page. The chip in the page
+      head sets the time (`frontend/src/app/DailyChip.tsx`).
+- [x] Optional Face ID lock for the whole app, switched on in Settings →
+      Security. Asked when the app opens; a second option also asks on
+      return from the background, off by default
+      (`frontend/src/app/AppLock.tsx`, `LockSettings.tsx`). Falls back to
+      the device passcode. A native blur in `SceneDelegate.swift` hides
+      the app in the app switcher.
 
 Check: a reminder fires with the app closed; the lock blocks the UI
-until Face ID succeeds.
+until Face ID succeeds. Not yet run on a device.
 
 ## Phase 6 — HealthKit
 
