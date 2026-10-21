@@ -10,10 +10,10 @@
     "test:coverage": "../scripts/run-bun.sh test --coverage src/"
   },
   "dependencies": {
-    "drizzle-orm": "^0.45.3",
+    "drizzle-orm": "^0.45.4",
     "exceljs": "^4.4.0",
     "hono": "^4.13.13",
-    "zod": "^4.5.4"
+    "zod": "^4.6.7"
   },
   "overrides": {
     "esbuild": ">=0.28.1",
@@ -27,8 +27,8 @@
     "brace-expansion": "^1.1.17"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.2",
-    "@types/node": "^26.6.4",
+    "@types/bun": "^1.4.3",
+    "@types/node": "^26.6.5",
     "@types/sql.js": "^1.4.11",
     "drizzle-kit": "^0.31.11",
     "sql.js": "^1.14.2",
