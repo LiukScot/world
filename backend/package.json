@@ -12,7 +12,7 @@
   "dependencies": {
     "drizzle-orm": "^0.45.4",
     "exceljs": "^4.4.0",
-    "hono": "^4.13.16",
+    "hono": "^4.13.17",
     "zod": "^4.6.7"
   },
   "overrides": {
